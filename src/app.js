@@ -22,6 +22,25 @@ const cats = [
   ["KODAK_FILM", "Kodak Film"]
 ];
 
+const PRIMARY_CATS = [
+  ["ALL", "All Looks"],
+  ["FAVORITES", "★ Favorites"],
+  ["WARM", "Warm"],
+  ["SOFT", "Soft"],
+  ["VINTAGE", "Vintage"]
+];
+
+const MORE_CATS = [
+  ["90S", "90s / 1998"],
+  ["JAPANESE", "Japanese"],
+  ["FLASH", "Flash"],
+  ["NIGHT", "Night"],
+  ["CINEMATIC", "Cinematic"],
+  ["BW", "B&W"],
+  ["KODAK_FILM", "Kodak Film"]
+];
+
+
 const moods = [
   ["ALL", "All Moods"],
   ["WARM", "Warm"],
@@ -408,10 +427,12 @@ const state = {
   isSplitActive: false,
   splitPos: 50,
   isDraggingSplit: false,
+  isMoreOpen: false,
   processingStatus: "idle",
   frame: null,
   token: 0
 };
+
 
 function formatVal(v) {
   if (v > 0) return `+${v}`;
@@ -973,21 +994,102 @@ function surpriseMe() {
 
 function renderTabs() {
   if (!el.tabs) return;
-  el.tabs.replaceChildren(...cats.map(([id, n]) => {
+
+  const isMoreCategoryActive = MORE_CATS.some(([id]) => id === state.selectedCategory);
+  const activeMoreCat = MORE_CATS.find(([id]) => id === state.selectedCategory);
+
+  const container = document.createDocumentFragment();
+
+  // 1. Primary Category Tabs
+  PRIMARY_CATS.forEach(([id, n]) => {
     const b = document.createElement("button");
     b.type = "button";
     b.className = "category-tab";
     b.role = "tab";
     b.textContent = n;
+    b.setAttribute("data-id", id);
     b.setAttribute("aria-selected", String(state.selectedCategory === id));
     b.onclick = () => {
       state.selectedCategory = id;
+      state.isMoreOpen = false;
       renderTabs();
       renderGrid();
     };
-    return b;
-  }));
+    container.appendChild(b);
+  });
+
+  // 2. More Dropdown Container
+  const moreWrap = document.createElement("div");
+  moreWrap.className = "category-more-wrap";
+
+  const moreBtn = document.createElement("button");
+  moreBtn.type = "button";
+  moreBtn.className = `category-tab category-more-btn${isMoreCategoryActive ? " is-active" : ""}`;
+  moreBtn.id = "category-more-btn";
+  moreBtn.role = "tab";
+  moreBtn.setAttribute("aria-haspopup", "menu");
+  moreBtn.setAttribute("aria-expanded", String(Boolean(state.isMoreOpen)));
+  moreBtn.setAttribute("aria-selected", String(isMoreCategoryActive));
+
+  const moreLabel = isMoreCategoryActive ? `MORE · ${activeMoreCat[1]} ▾` : "MORE ▾";
+  moreBtn.textContent = moreLabel;
+
+  moreBtn.onclick = (e) => {
+    e.stopPropagation();
+    state.isMoreOpen = !state.isMoreOpen;
+    renderTabs();
+  };
+
+  moreWrap.appendChild(moreBtn);
+
+  // 3. Dropdown Menu
+  const dropdown = document.createElement("div");
+  dropdown.className = `category-more-dropdown${state.isMoreOpen ? " is-open" : ""}`;
+  dropdown.id = "category-more-dropdown";
+  dropdown.role = "menu";
+  dropdown.setAttribute("aria-label", "Additional film categories");
+  if (!state.isMoreOpen) {
+    dropdown.hidden = true;
+  }
+
+  MORE_CATS.forEach(([id, n]) => {
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = `category-dropdown-item${state.selectedCategory === id ? " is-active" : ""}`;
+    item.setAttribute("data-id", id);
+    item.role = "menuitem";
+    item.setAttribute("aria-selected", String(state.selectedCategory === id));
+
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "dropdown-item-name";
+    nameSpan.textContent = n;
+    item.appendChild(nameSpan);
+
+    if (state.selectedCategory === id) {
+      const checkSpan = document.createElement("span");
+      checkSpan.className = "dropdown-item-check";
+      checkSpan.textContent = "✓";
+      checkSpan.setAttribute("aria-hidden", "true");
+      item.appendChild(checkSpan);
+    }
+
+    item.onclick = (e) => {
+      e.stopPropagation();
+      state.selectedCategory = id;
+      state.isMoreOpen = false;
+      renderTabs();
+      renderGrid();
+    };
+
+    dropdown.appendChild(item);
+  });
+
+  moreWrap.appendChild(dropdown);
+  container.appendChild(moreWrap);
+
+  el.tabs.replaceChildren(container);
 }
+
 
 function renderGrid() {
   if (!el.grid) return;
@@ -1404,13 +1506,31 @@ el.input.onchange = e => files(e.target.files);
 ["dragenter", "dragover"].forEach(n => el.drop.addEventListener(n, e => { e.preventDefault(); el.drop.classList.add("is-dragging"); }));
 ["dragleave", "drop"].forEach(n => el.drop.addEventListener(n, e => { e.preventDefault(); el.drop.classList.remove("is-dragging"); }));
 el.drop.addEventListener("drop", e => files(e.dataTransfer.files));
-window.addEventListener("beforeunload", revoke);
+function setupCategoryEvents() {
+  document.addEventListener("click", (e) => {
+    if (state.isMoreOpen && !e.target.closest(".category-more-wrap")) {
+      state.isMoreOpen = false;
+      renderTabs();
+    }
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && state.isMoreOpen) {
+      state.isMoreOpen = false;
+      renderTabs();
+      const btn = document.getElementById("category-more-btn");
+      if (btn) btn.focus();
+    }
+  });
+}
 
 setupSplitInteractions();
 setupSliders();
 setupResetControls();
+setupCategoryEvents();
 
 if (typeof window !== "undefined") {
+
   window.__filmlab = {
     state,
     el,

@@ -741,28 +741,24 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 
 .surprise-icon { font-size: .8rem; }
 
-/* Mood Discovery Bar (Editorial Film Index) */
+/* Mood Discovery Bar (Editorial Film Index - Primary Categories + More) */
 .mood-discovery-bar {
   display: flex;
-  gap: 2px;
-  overflow-x: auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 4px;
   padding: 4px 0 6px;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
   min-width: 0;
   max-width: 100%;
-  -webkit-overflow-scrolling: touch;
   border-bottom: 1px solid var(--line);
-}
-
-.mood-discovery-bar::-webkit-scrollbar {
-  display: none;
+  position: relative;
 }
 
 .category-tab {
   flex: 0 0 auto;
-  min-height: 32px;
-  padding: 6px 12px;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 10px;
   border: none;
   background: transparent;
   color: var(--muted);
@@ -771,14 +767,24 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   letter-spacing: .08em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: color .12s ease;
+  transition: color .12s ease, background-color .12s ease;
   white-space: nowrap;
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .category-tab:hover {
   color: var(--ink);
-  background: transparent;
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.category-tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 
 .category-tab[aria-selected="true"] {
@@ -792,11 +798,102 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   content: "";
   position: absolute;
   bottom: -1px;
-  left: 8px;
-  right: 8px;
+  left: 6px;
+  right: 6px;
   height: 2px;
   background: var(--ink);
 }
+
+/* More Dropdown Wrap & Button */
+.category-more-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.category-more-btn {
+  font-family: inherit;
+}
+
+.category-more-btn.is-active[aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 6px;
+  right: 6px;
+  height: 2px;
+  background: var(--accent);
+}
+
+.category-more-btn.is-active {
+  color: var(--ink);
+}
+
+/* Editorial Dropdown Menu */
+.category-more-dropdown {
+  position: absolute;
+  top: calc(100% + 2px);
+  right: 0;
+  min-width: 180px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  z-index: 200;
+  padding: 4px 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.category-more-dropdown[hidden] {
+  display: none;
+}
+
+.category-dropdown-item {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 16px;
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-align: left;
+  width: 100%;
+  box-sizing: border-box;
+  transition: background-color .12s ease, color .12s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.category-dropdown-item:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--accent);
+}
+
+.category-dropdown-item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.category-dropdown-item.is-active {
+  color: var(--accent);
+  font-weight: 800;
+  background: var(--paper-deep);
+}
+
+.dropdown-item-check {
+  font-size: .82rem;
+  color: var(--accent);
+  font-weight: 800;
+}
+
 
 /* Look Detail Card (Editorial Caption Style) */
 .look-detail-card {
@@ -1504,11 +1601,13 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   }
 
   .category-tab {
-    min-height: 32px;
-    padding: 6px 10px;
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0 10px;
     font-size: .72rem;
   }
 }
+
 
 
 /* Tablet (768px+) */
