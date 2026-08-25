@@ -18,7 +18,8 @@ const cats = [
   ["FLASH", "Flash"],
   ["NIGHT", "Night"],
   ["CINEMATIC", "Cinematic"],
-  ["BW", "B&W"]
+  ["BW", "B&W"],
+  ["KODAK_FILM", "Kodak Film"]
 ];
 
 const moods = [
@@ -30,7 +31,8 @@ const moods = [
   ["GREEN", "Green"],
   ["NIGHT", "Night"],
   ["CINEMATIC", "Cinematic"],
-  ["BW", "B&W"]
+  ["BW", "B&W"],
+  ["KODAK", "Kodak Film"]
 ];
 
 const base = {
@@ -82,14 +84,23 @@ const L = (id, name, category, description, settings, recommendedFor = [], metad
   ...settings,
   recommendedFor,
   thumbnail: { crop: "center" },
-  collection: category === "1998" ? "1998 CAM" : category,
+  collection: metadata.collection || (category === "1998" ? "1998 CAM" : category === "KODAK_FILM" ? "Kodak Film" : category),
   character: metadata.character || description,
+  manufacturer: metadata.manufacturer || "Kodak",
+  stock: metadata.stock || null,
+  format: metadata.format || "35mm",
+  type: metadata.type || "Color Negative",
+  balance: metadata.balance || "Daylight",
+  iso: metadata.iso || 100,
+  era: metadata.era || "Modern",
+  stockSubtitle: metadata.stockSubtitle || (metadata.stock ? `${metadata.stock} · ${metadata.balance || metadata.type || "Cinema"}` : null),
   group: metadata.group || "Standard",
   warmthProfile: metadata.warmthProfile || "neutral",
   contrastProfile: metadata.contrastProfile || "medium",
   grainProfile: metadata.grainProfile || "fine",
   softnessProfile: metadata.softnessProfile || "none"
 });
+
 
 const presetLibrary = Object.freeze([
   L("1998-warm", "1998 Warm", "1998", "Nostalgic compact-camera golden daylight", { contrast: 4, highlights: -10, shadows: 6, temperature: 13, tint: 2, saturation: 8, fade: 5, grain: 9, vignette: 6, halation: 4, bloom: 3, colorBias: [8, 3, -5] }, ["everyday", "daylight", "golden-hour"], { group: "FAVORITES" }),
@@ -147,7 +158,22 @@ const presetLibrary = Object.freeze([
   L("pink-dream", "Pink Dream", "CREATIVE", "Soft candy-pink haze", { contrast: -10, shadows: 9, temperature: 6, tint: 18, saturation: 5, fade: 10, grain: 5, bloom: 8 }, ["portrait", "dreamy"]),
   L("faded-color", "Faded Color", "CREATIVE", "Sun-softened color", { contrast: -17, shadows: 12, saturation: -20, fade: 18, grain: 8, vignette: 3 }, ["daylight", "vintage"]),
   L("washed-film", "Washed Film", "CREATIVE", "A pale washed frame", { exposure: 5, contrast: -20, shadows: 15, temperature: 2, saturation: -23, fade: 22, grain: 6, bloom: 5 }, ["summer", "portrait"]),
-  L("retro-pop", "Retro Pop", "CREATIVE", "Punchy playful color", { contrast: 16, temperature: 4, tint: 8, saturation: 25, grain: 9, vignette: 6, halation: 4 }, ["party", "travel"])
+  L("retro-pop", "Retro Pop", "CREATIVE", "Punchy playful color", { contrast: 16, temperature: 4, tint: 8, saturation: 25, grain: 9, vignette: 6, halation: 4 }, ["party", "travel"]),
+
+  // --- KODAK FILM COLLECTION (13 Digital Interpretations) ---
+  L("kodak-vision3-50d", "Kodak Vision3 50D", "KODAK_FILM", "5203 · DAYLIGHT · Fine-grain daylight cinema with clean natural skin tones", { contrast: 6, highlights: -14, shadows: 4, temperature: 4, tint: 0, saturation: 4, fade: 2, grain: 4, vignette: 4, halation: 3, bloom: 2, colorBias: [4, 2, -2] }, ["daylight", "portrait", "landscape", "bright-exterior", "cinematic"], { collection: "Kodak Film", manufacturer: "Kodak", stock: "5203 / 7203", format: "35mm / 16mm", type: "Color Negative", balance: "Daylight", iso: 50, era: "Modern", character: "Fine-grain daylight cinema with natural skin tones and soft highlight roll-off", stockSubtitle: "5203 · DAYLIGHT" }),
+  L("kodak-vision3-250d", "Kodak Vision3 250D", "KODAK_FILM", "5207 · DAYLIGHT · Versatile organic daylight stock with rich latitude", { exposure: 1, contrast: 8, highlights: -12, shadows: 3, temperature: 6, tint: 1, saturation: 7, fade: 3, grain: 7, vignette: 5, halation: 4, bloom: 3, colorBias: [6, 2, -3] }, ["daylight", "portrait", "street", "documentary", "cinematic"], { collection: "Kodak Film", manufacturer: "Kodak", stock: "5207 / 7207", format: "35mm / 16mm", type: "Color Negative", balance: "Daylight", iso: 250, era: "Modern", character: "Versatile daylight motion picture stock with balanced tonality and organic warmth", stockSubtitle: "5207 · DAYLIGHT" }),
+  L("kodak-vision3-200t", "Kodak Vision3 200T", "KODAK_FILM", "5213 · TUNGSTEN · Smooth skin rendition with warm practical highlights and cool shadows", { exposure: 1, contrast: 10, highlights: -10, shadows: -2, temperature: -8, tint: 4, saturation: 5, fade: 3, grain: 8, vignette: 8, halation: 6, bloom: 4, colorBias: [4, 1, 6] }, ["interior", "mixed-light", "golden-hour", "portrait", "cinematic"], { collection: "Kodak Film", manufacturer: "Kodak", stock: "5213 / 7213", format: "35mm / 16mm", type: "Color Negative", balance: "Tungsten", iso: 200, era: "Modern", character: "Tungsten studio negative with smooth skin rendition and controlled warm highlights", stockSubtitle: "5213 · TUNGSTEN" }),
+  L("kodak-vision3-500t", "Kodak Vision3 500T", "KODAK_FILM", "5219 · TUNGSTEN · Flagship low-light cinema look with subtle halation and deep ambient shadows", { exposure: 0, contrast: 14, highlights: -8, shadows: -6, temperature: -14, tint: 6, saturation: 10, fade: 4, grain: 12, vignette: 12, halation: 10, bloom: 6, colorBias: [5, -1, 10] }, ["night", "interior", "low-light", "neon", "cinematic"], { collection: "Kodak Film", manufacturer: "Kodak", stock: "5219 / 7219", format: "35mm / 16mm", type: "Color Negative", balance: "Tungsten", iso: 500, era: "Modern", character: "Flagship cinematic low-light stock with warm practical highlights and rich cool shadows", stockSubtitle: "5219 · TUNGSTEN" }),
+  L("eastman-5248", "Eastman 5248", "KODAK_FILM", "5248 · 1950s · Golden age Hollywood palette with painterly pastel warmth", { exposure: 2, contrast: -10, highlights: -18, shadows: 12, temperature: 14, tint: 4, saturation: -4, fade: 12, grain: 6, bloom: 8, halation: 5, colorBias: [10, 3, -6] }, ["vintage", "portrait", "daylight", "nostalgic"], { collection: "Kodak Film", manufacturer: "Kodak", stock: "5248", format: "35mm", type: "Color Negative", balance: "Daylight / Tungsten", iso: 25, era: "1950s Golden Era", character: "Golden age Hollywood Technicolor-era stock with lush warm reds and painterly contrast", stockSubtitle: "5248 · 1950s" }),
+  L("kodak-5247", "Kodak 5247", "KODAK_FILM", "5247 · 1970s–80s · Expressive shadows with dreamlike golden-hour amber tones", { exposure: 1, contrast: 12, highlights: -14, shadows: 4, temperature: 11, tint: -2, saturation: 8, fade: 6, grain: 10, vignette: 9, halation: 8, bloom: 5, colorBias: [9, 4, -7] }, ["golden-hour", "portrait", "landscape", "dreamy", "vintage"], { collection: "Kodak Film", manufacturer: "Kodak", stock: "5247", format: "35mm", type: "Color Negative", balance: "Tungsten", iso: 100, era: "1970s–1980s Cinema", character: "The look of 1970s and 80s cinema with rich expressive shadows and magic-hour amber warmth", stockSubtitle: "5247 · 1970s–80s" }),
+  L("kodak-5384", "Kodak 5384", "KODAK_FILM", "5384 · PRINT STOCK · Atmospheric thriller tonality with cool shadows and clinical precision", { exposure: -1, contrast: 18, highlights: -12, shadows: -8, temperature: -20, tint: -4, saturation: -6, fade: 3, grain: 6, vignette: 14, halation: 4, bloom: 3, colorBias: [-7, 2, 12] }, ["night", "urban", "thriller", "cool", "cinematic"], { collection: "Kodak Film", manufacturer: "Kodak", stock: "5384", format: "35mm", type: "Print Stock", balance: "Neutral / Cool", iso: 6, era: "1980s–1990s Print", character: "Cinematic print stock with clinical coolness, stylized shadows, and atmospheric thriller edge", stockSubtitle: "5384 · PRINT STOCK" }),
+  L("kodak-exr", "Kodak EXR", "KODAK_FILM", "EXR 5298 · 1990s · Crisp 90s T-Grain separation with fine low-light clarity", { exposure: 0, contrast: 15, highlights: -10, shadows: -4, temperature: -6, tint: 3, saturation: 6, fade: 4, grain: 9, vignette: 10, halation: 6, bloom: 4, colorBias: [2, 1, 6] }, ["low-light", "cinematic", "interior", "drama"], { collection: "Kodak Film", manufacturer: "Kodak", stock: "5296 / 5298", format: "35mm", type: "Color Negative", balance: "Tungsten", iso: 500, era: "1990s Cinema", character: "1990s high-speed negative with T-grain emulsion, fine darks, and crisp tonal separation", stockSubtitle: "EXR 5298 · 1990s" }),
+  L("kodak-vision", "Kodak VISION", "KODAK_FILM", "VISION 5279 · 1990s · Clean scan-like digital intermediate tonality with balanced color", { exposure: 1, contrast: 9, highlights: -8, shadows: 2, temperature: 2, tint: 1, saturation: 4, fade: 4, grain: 8, vignette: 6, halation: 5, bloom: 3, colorBias: [3, 1, -1] }, ["everyday", "cinematic", "digital-intermediate", "portrait"], { collection: "Kodak Film", manufacturer: "Kodak", stock: "5279 / 7279", format: "35mm / 16mm", type: "Color Negative", balance: "Tungsten", iso: 500, era: "Late 1990s", character: "Late 90s digital intermediate baseline with clean scan tonality and balanced color neutrality", stockSubtitle: "VISION 5279 · 1990s" }),
+  L("kodak-vision2-250d", "Kodak VISION2 250D", "KODAK_FILM", "5205 · 2000s DAYLIGHT · Balanced 2000s cinema tonality with smooth highlight headroom", { exposure: 1, contrast: 10, highlights: -14, shadows: 4, temperature: 5, tint: 0, saturation: 6, fade: 3, grain: 7, vignette: 6, halation: 4, bloom: 3, colorBias: [5, 2, -2] }, ["daylight", "exterior", "portrait", "cinematic"], { collection: "Kodak Film", manufacturer: "Kodak", stock: "5205 / 7205", format: "35mm / 16mm", type: "Color Negative", balance: "Daylight", iso: 250, era: "2000s Cinema", character: "2000s daylight cinema negative with extended highlight headroom and natural exterior skin tones", stockSubtitle: "5205 · 2000s DAYLIGHT" }),
+  L("kodak-vision2-500t", "Kodak VISION2 500T", "KODAK_FILM", "5218 · 2000s TUNGSTEN · Iconic 2000s moody low-light grade with deep cinematic shadows", { exposure: 0, contrast: 16, highlights: -9, shadows: -7, temperature: -11, tint: 5, saturation: 8, fade: 4, grain: 11, vignette: 13, halation: 8, bloom: 5, colorBias: [3, 0, 8] }, ["night", "interior", "low-light", "cinematic"], { collection: "Kodak Film", manufacturer: "Kodak", stock: "5218 / 7218", format: "35mm / 16mm", type: "Color Negative", balance: "Tungsten", iso: 500, era: "2000s Cinema", character: "The defining low-light stock of 2000s cinema with rich contrast and moody shadow depths", stockSubtitle: "5218 · 2000s TUNGSTEN" }),
+  L("kodak-ektachrome-100d", "Kodak Ektachrome 100D", "KODAK_FILM", "5285 · COLOR REVERSAL · Vivid slide-film saturation with deep punchy blacks and brilliant highlights", { exposure: 2, contrast: 24, highlights: -4, shadows: -10, temperature: 3, tint: -2, saturation: 34, fade: 2, grain: 5, vignette: 8, halation: 6, bloom: 4, colorBias: [6, 4, -4] }, ["vivid", "daylight", "dreamlike", "special", "cinematic"], { collection: "Kodak Film", manufacturer: "Kodak", stock: "5285 / 7285", format: "35mm / 16mm", type: "Color Reversal", balance: "Daylight", iso: 100, era: "Slide / Reversal", character: "High-saturation color reversal slide film with intense color pop, deep blacks, and punchy highlights", stockSubtitle: "5285 · COLOR REVERSAL" }),
+  L("kodak-double-x-5222", "Kodak Double-X 5222", "KODAK_FILM", "5222 · B&W MOTION PICTURE · Timeless monochrome cinema negative with velvety deep contrast", { exposure: 1, contrast: 22, highlights: -6, shadows: -4, saturation: -100, fade: 3, grain: 18, vignette: 10, halation: 0, bloom: 2, colorBias: [0, 0, 0] }, ["bw", "noir", "street", "documentary", "drama", "cinematic"], { collection: "Kodak Film", manufacturer: "Kodak", stock: "5222 / 7222", format: "35mm / 16mm", type: "Black & White Negative", balance: "Panchromatic", iso: 250, era: "Classic Noir to Modern Cinema", character: "Legendary motion picture black-and-white stock with rich velvety blacks and silver-rich grain", stockSubtitle: "5222 · B&W MOTION PICTURE" })
 ]);
 
 const lookMoodTags = {
@@ -206,8 +232,24 @@ const lookMoodTags = {
   "pink-dream": ["soft", "warm"],
   "faded-color": ["vintage", "soft"],
   "washed-film": ["soft", "vintage"],
-  "retro-pop": ["vintage", "flash"]
+  "retro-pop": ["vintage", "flash"],
+
+  // Kodak Film mood tags
+  "kodak-vision3-50d": ["warm", "cinematic", "kodak film"],
+  "kodak-vision3-250d": ["warm", "cinematic", "kodak film"],
+  "kodak-vision3-200t": ["cinematic", "night", "soft", "kodak film"],
+  "kodak-vision3-500t": ["night", "cinematic", "flash", "kodak film"],
+  "eastman-5248": ["vintage", "warm", "soft", "kodak film"],
+  "kodak-5247": ["vintage", "warm", "cinematic", "kodak film"],
+  "kodak-5384": ["cinematic", "night", "kodak film"],
+  "kodak-exr": ["cinematic", "night", "kodak film"],
+  "kodak-vision": ["cinematic", "soft", "kodak film"],
+  "kodak-vision2-250d": ["warm", "cinematic", "soft", "kodak film"],
+  "kodak-vision2-500t": ["night", "cinematic", "kodak film"],
+  "kodak-ektachrome-100d": ["warm", "vintage", "flash", "cinematic", "kodak film"],
+  "kodak-double-x-5222": ["bw", "cinematic", "kodak film"]
 };
+
 
 function loadStorageList(key) {
   try {
@@ -835,8 +877,26 @@ function updateLookDetail() {
   }
   if (el.lookDetailCard) el.lookDetailCard.hidden = false;
   if (el.detailPresetName) el.detailPresetName.textContent = p.name;
-  if (el.detailPresetCollection) el.detailPresetCollection.textContent = cats.find(a => a[0] === p.category)?.[1] || p.collection || p.category;
-  if (el.detailPresetDesc) el.detailPresetDesc.textContent = p.description || p.character || "Authentic film look";
+  if (el.detailPresetCollection) {
+    if (p.category === "KODAK_FILM" || p.collection === "Kodak Film") {
+      el.detailPresetCollection.textContent = "KODAK FILM";
+    } else {
+      el.detailPresetCollection.textContent = cats.find(a => a[0] === p.category)?.[1] || p.collection || p.category;
+    }
+  }
+  if (el.detailPresetDesc) {
+    if (p.category === "KODAK_FILM" || p.collection === "Kodak Film") {
+      const parts = [];
+      if (p.stock) parts.push(p.stock);
+      if (p.type) parts.push(p.type.toUpperCase());
+      if (p.balance) parts.push(p.balance.toUpperCase());
+      if (p.iso) parts.push(`ISO ${p.iso}`);
+      const metaLine = parts.length > 0 ? parts.join(" · ") : "";
+      el.detailPresetDesc.textContent = metaLine ? `${metaLine}\n${p.character || p.description}` : (p.character || p.description);
+    } else {
+      el.detailPresetDesc.textContent = p.description || p.character || "Authentic film look";
+    }
+  }
   if (el.detailPresetBestFor) {
     const bestForStr = p.recommendedFor && p.recommendedFor.length > 0 ? `Best for: ${p.recommendedFor.map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(" · ")}` : "Best for: Daylight · Everyday";
     el.detailPresetBestFor.textContent = bestForStr;
@@ -894,7 +954,9 @@ function surpriseMe() {
   } else if (state.selectedCategory === "JAPANESE") {
     pool = presetLibrary.filter(p => p.category === "JAPANESE");
   } else if (state.selectedCategory === "BW") {
-    pool = presetLibrary.filter(p => p.category === "BW");
+    pool = presetLibrary.filter(p => p.category === "BW" || p.id === "kodak-double-x-5222");
+  } else if (state.selectedCategory === "KODAK_FILM") {
+    pool = presetLibrary.filter(p => p.category === "KODAK_FILM" || p.collection === "Kodak Film");
   } else if (state.selectedCategory !== "ALL") {
     const targetMood = state.selectedCategory.toLowerCase();
     pool = presetLibrary.filter(p => (lookMoodTags[p.id] || []).includes(targetMood));
@@ -944,7 +1006,10 @@ function renderGrid() {
     list = presetLibrary.filter(p => p.category === "JAPANESE");
   } else if (state.selectedCategory === "BW") {
     if (el.favEmptyState) el.favEmptyState.hidden = true;
-    list = presetLibrary.filter(p => p.category === "BW");
+    list = presetLibrary.filter(p => p.category === "BW" || p.id === "kodak-double-x-5222");
+  } else if (state.selectedCategory === "KODAK_FILM") {
+    if (el.favEmptyState) el.favEmptyState.hidden = true;
+    list = presetLibrary.filter(p => p.category === "KODAK_FILM" || p.collection === "Kodak Film");
   } else {
     if (el.favEmptyState) el.favEmptyState.hidden = true;
     const targetMood = state.selectedCategory.toLowerCase();
@@ -973,12 +1038,17 @@ function renderGrid() {
     b.setAttribute("aria-label", `${p.name}, ${p.description}`);
     if (state.sourceImage) draw(t, state.sourceImage, p, 320);
     n.textContent = p.name;
-    c.textContent = cats.find(a => a[0] === p.category)?.[1] || p.character || p.description || p.category;
+    if (p.category === "KODAK_FILM" || p.collection === "Kodak Film") {
+      c.textContent = p.stockSubtitle || p.character || p.description;
+    } else {
+      c.textContent = cats.find(a => a[0] === p.category)?.[1] || p.character || p.description || p.category;
+    }
     b.append(wrap, n, c);
     b.onclick = () => selectPreset(p);
     return b;
   }));
 }
+
 
 const adjustKeys = ["exposure", "contrast", "highlights", "shadows", "temperature", "tint", "saturation"];
 const effectKeys = ["grain", "vignette", "halation", "bloom", "fade", "lightLeak"];

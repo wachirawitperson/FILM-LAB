@@ -879,8 +879,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   margin: 0;
   font-size: .76rem;
   color: var(--muted);
-  line-height: 1.3;
+  line-height: 1.35;
+  white-space: pre-line;
 }
+
 
 .look-detail-footer {
   display: flex;
