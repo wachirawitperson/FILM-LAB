@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#141412" />
+    <meta
+      name="description"
+      content="A quiet digital film studio for discovering authentic analog-inspired looks, comparing before and after, and creating beautiful film-style photographs directly in your browser."
+    />
+    <title>FILM LAB — Digital Film Studies</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <meta property="og:site_name" content="FILM LAB" />
+    <meta property="og:title" content="FILM LAB — Digital Film Studies" />
+    <meta
+      property="og:description"
+      content="A quiet digital film studio for discovering authentic analog-inspired looks, comparing before and after, and creating beautiful film-style photographs directly in your browser."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_US" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="FILM LAB — Digital Film Studies" />
+    <meta
+      name="twitter:description"
+      content="A quiet digital film studio for discovering authentic analog-inspired looks, comparing before and after, and creating beautiful film-style photographs directly in your browser."
+    />
+    <link rel="stylesheet" href="src/styles.css" />
+  </head>
+
+  <body>
+    <main class="app-shell" id="app-shell" aria-labelledby="page-title">
+      <!-- Site Header -->
+      <header class="site-header">
+        <div class="header-brand">
+          <a class="wordmark" href="/" aria-label="FILM LAB home">FILM LAB</a>
+          <span class="header-divider" aria-hidden="true">/</span>
+          <p class="header-note">Digital film studies</p>
+        </div>
+
+        <!-- Studio Header Quick Actions (Active in Editor Mode) -->
+        <div class="studio-header-actions" id="studio-header-actions" hidden>
+          <div class="file-badge">
+            <span class="file-name" id="file-name" aria-live="polite"></span>
+            <span class="file-dimensions" id="file-dimensions"></span>
+          </div>
+          <div class="header-buttons">
+            <button class="button button-subtle header-btn-change" id="header-replace-photo" type="button" title="Choose another photo">
+              Change Photo
+            </button>
+            <button class="button button-subtle button-danger header-btn-remove" id="header-remove-photo" type="button" title="Remove photo and return to empty state">
+              Remove
+            </button>
+            <button class="button button-primary download-btn" id="download-photo" type="button">
+              <span class="download-icon" aria-hidden="true">↓</span>
+              <span id="download-btn-text">Download</span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main Editor Shell -->
+      <div class="editor-shell" id="editor-shell">
+        
+        <!-- Intro Hero (Visible in Empty State) -->
+        <div class="intro-panel" id="intro-panel">
+          <p class="eyebrow">DIGITAL FILM STUDIO</p>
+          <h1 id="page-title">Bring a photo.<br />Find its film.</h1>
+          <p class="intro-copy">
+            Explore 56 authentic analog film recipes, compare before and after, and export in full master resolution.
+          </p>
+        </div>
+
+        <!-- Hero Photo Stage Section -->
+        <section class="stage-section" aria-label="Photo editing preview stage">
+          <!-- Preview Stage / Canvas Viewport -->
+          <div class="preview-stage" id="preview-stage">
+            <!-- Empty State -->
+            <div class="empty-state" id="empty-state">
+              <span class="empty-state-mark" aria-hidden="true"></span>
+              <p class="empty-state-title">Light Table</p>
+              <p class="empty-state-subtitle">Drop a photo here or browse to begin</p>
+            </div>
+
+            <!-- Canvas Stage Container (Active in Editor Mode) -->
+            <div class="stage-viewport" id="stage-viewport" hidden>
+              <!-- Base Original Layer -->
+              <img id="image-preview" alt="Original photo" />
+              
+              <!-- Graded Film Layer -->
+              <div class="graded-layer" id="graded-layer">
+                <canvas id="rendered-preview" aria-label="Film look preview"></canvas>
+              </div>
+
+              <!-- Interactive Before/After Divider -->
+              <div class="split-divider" id="split-divider" hidden>
+                <div class="split-hit-area"></div>
+                <div class="split-line"></div>
+                <div class="split-handle" id="split-handle" role="slider" aria-label="Before after split comparison slider" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50" tabindex="0">
+                  <span class="handle-arrow" aria-hidden="true">◀ ▶</span>
+                </div>
+              </div>
+
+              <!-- Split Badges -->
+              <span class="split-badge split-badge-left" id="badge-original" hidden>ORIGINAL</span>
+              <span class="split-badge split-badge-right" id="badge-edited" hidden>EDITED</span>
+
+              <!-- Floating Comparison Bar -->
+              <div class="comparison-bar" id="comparison-bar" role="group" aria-label="Before and after comparison">
+                <button class="compare-btn" id="compare-original" type="button" title="View original photo">
+                  <span class="compare-icon" aria-hidden="true">👁</span>
+                  <span>Original</span>
+                </button>
+                <button class="compare-btn" id="compare-split" type="button" aria-pressed="false" title="Drag split slider to compare">
+                  <span class="compare-icon" aria-hidden="true">◧</span>
+                  <span>Split</span>
+                </button>
+                <button class="compare-btn is-active" id="compare-edited" type="button" title="View graded film look">
+                  <span class="compare-icon" aria-hidden="true">✦</span>
+                  <span>Edited</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="image-meta" id="image-meta" hidden></div>
+            <div class="status-indicator" id="render-status" aria-live="polite" hidden>Ready</div>
+          </div>
+        </section>
+
+        <!-- Initial Upload Panel (Empty State) -->
+        <section class="upload-panel" id="upload-panel" aria-labelledby="upload-heading">
+          <div class="upload-heading">
+            <p class="eyebrow">STEP 01</p>
+            <h2 id="upload-heading">Set your frame</h2>
+          </div>
+
+          <div class="drop-zone" id="drop-zone">
+            <input
+              id="photo-input"
+              class="visually-hidden"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+            />
+            <div class="drop-zone-content">
+              <span class="drop-frame-mark" aria-hidden="true"></span>
+              <p class="drop-zone-title">Select Photograph</p>
+              <p class="drop-zone-copy">JPEG, PNG, or WebP (up to 30 MB)</p>
+              <button class="button button-primary" id="select-photo" type="button">
+                Upload photo
+              </button>
+              <p class="drop-zone-hint">or drop a file anywhere</p>
+            </div>
+          </div>
+
+          <p class="upload-error" id="upload-error" role="alert" hidden></p>
+        </section>
+
+        <!-- Studio Film Discovery & Secondary Controls (Editor Mode) -->
+        <section class="studio-dock" id="studio-dock" aria-label="Film discovery and editing controls" hidden>
+          
+          <!-- Primary Film Discovery Section -->
+          <div class="discovery-section" id="discovery-section">
+            <div class="discovery-header">
+              <div class="discovery-title-group">
+                <span class="panel-eyebrow film-index-anchor" id="film-index-anchor">FILM INDEX · 56 LOOKS</span>
+                <h2 class="discovery-title">Find your film look</h2>
+              </div>
+              <div class="discovery-actions">
+                <button class="button button-subtle surprise-btn" id="surprise-me-btn" type="button" aria-label="Surprise me with a random film look">
+                  <span class="surprise-icon" aria-hidden="true">✨</span>
+                  <span>Surprise me</span>
+                </button>
+                <button class="button button-text reset-look-link" id="reset-look" type="button" disabled>Reset Look</button>
+              </div>
+            </div>
+
+
+            <!-- Mood Discovery Tabs -->
+            <div class="mood-discovery-bar" id="category-tabs" role="tablist" aria-label="Film discovery moods"></div>
+
+            <!-- Selected Look Detail Card (Spotlight) -->
+            <div class="look-detail-card" id="look-detail-card" hidden>
+              <div class="look-detail-header">
+                <div class="look-detail-title-group">
+                  <span class="look-detail-name" id="detail-preset-name">1998 Warm</span>
+                  <span class="look-detail-divider" aria-hidden="true">·</span>
+                  <span class="look-detail-badge" id="detail-preset-collection">1998 CAM</span>
+                </div>
+                <button class="detail-fav-btn" id="detail-fav-btn" type="button" aria-label="Add to favorites">
+                  <span class="detail-fav-icon" aria-hidden="true">♡</span>
+                </button>
+              </div>
+              <p class="look-detail-desc" id="detail-preset-desc">Nostalgic compact-camera golden daylight</p>
+              <div class="look-detail-footer">
+                <span class="look-detail-bestfor" id="detail-preset-bestfor">Best for: Portrait · Golden Hour</span>
+                <div class="look-detail-pills" id="detail-preset-pills"></div>
+              </div>
+            </div>
+
+
+            <!-- Recently Used Row (Visible when recent looks exist) -->
+            <div class="recent-looks-section" id="recent-looks-section" hidden>
+              <div class="recent-looks-header">
+                <span class="panel-eyebrow">RECENTLY USED</span>
+              </div>
+              <div class="recent-looks-row" id="recent-looks-row" aria-label="Recently used film looks"></div>
+            </div>
+
+            <!-- Film Preset Grid & Empty State -->
+            <div class="preset-grid" id="preset-grid" aria-label="Film presets"></div>
+            <div class="favorites-empty-state" id="favorites-empty-state" hidden>
+              <span class="fav-empty-icon" aria-hidden="true">♡</span>
+              <p class="fav-empty-title">Save the looks you love.</p>
+              <p class="fav-empty-sub">Click the heart icon on any preset to quickly access your favorite film looks here.</p>
+            </div>
+          </div>
+
+          <!-- Secondary Progressive Disclosure: Fine Tune & Film Effects -->
+          <div class="secondary-tools-section" id="secondary-tools-section">
+            
+            <!-- Accordion 1: Fine Tune (Manual Adjustments) -->
+            <details class="tool-accordion" id="accordion-adjust">
+              <summary class="accordion-summary">
+                <span class="accordion-title">
+                  <span class="accordion-icon" aria-hidden="true">⚙</span>
+                  <span>Fine Tune</span>
+                </span>
+                <span class="accordion-arrow" aria-hidden="true">▾</span>
+              </summary>
+              <div class="accordion-content">
+                <div class="controls-list">
+                  <!-- Exposure -->
+                  <div class="control-row">
+                    <div class="control-header">
+                      <label for="adj-exposure" class="control-label">Exposure</label>
+                      <span class="control-value" id="val-exposure">0</span>
+                    </div>
+                    <input type="range" class="slider-input" id="adj-exposure" min="-100" max="100" value="0" step="1" />
+                  </div>
+                  <!-- Contrast -->
+                  <div class="control-row">
+                    <div class="control-header">
+                      <label for="adj-contrast" class="control-label">Contrast</label>
+                      <span class="control-value" id="val-contrast">0</span>
+                    </div>
+                    <input type="range" class="slider-input" id="adj-contrast" min="-100" max="100" value="0" step="1" />
+                  </div>
+                  <!-- Highlights -->
+                  <div class="control-row">
+                    <div class="control-header">
+                      <label for="adj-highlights" class="control-label">Highlights</label>
+                      <span class="control-value" id="val-highlights">0</span>
+                    </div>
+                    <input type="range" class="slider-input" id="adj-highlights" min="-100" max="100" value="0" step="1" />
+                  </div>
+                  <!-- Shadows -->
+                  <div class="control-row">
+                    <div class="control-header">
+                      <label for="adj-shadows" class="control-label">Shadows</label>
+                      <span class="control-value" id="val-shadows">0</span>
+                    </div>
+                    <input type="range" class="slider-input" id="adj-shadows" min="-100" max="100" value="0" step="1" />
+                  </div>
+                  <!-- Temperature -->
+                  <div class="control-row">
+                    <div class="control-header">
+                      <label for="adj-temperature" class="control-label">Temperature</label>
+                      <span class="control-value" id="val-temperature">0</span>
+                    </div>
+                    <input type="range" class="slider-input" id="adj-temperature" min="-100" max="100" value="0" step="1" />
+                  </div>
+                  <!-- Tint -->
+                  <div class="control-row">
+                    <div class="control-header">
+                      <label for="adj-tint" class="control-label">Tint</label>
+                      <span class="control-value" id="val-tint">0</span>
+                    </div>
+                    <input type="range" class="slider-input" id="adj-tint" min="-100" max="100" value="0" step="1" />
+                  </div>
+                  <!-- Saturation -->
+                  <div class="control-row">
+                    <div class="control-header">
+                      <label for="adj-saturation" class="control-label">Saturation</label>
+                      <span class="control-value" id="val-saturation">0</span>
+                    </div>
+                    <input type="range" class="slider-input" id="adj-saturation" min="-100" max="100" value="0" step="1" />
+                  </div>
+                </div>
+                <div class="accordion-footer">
+                  <button class="button button-text panel-reset-link" id="reset-adjustments-link" type="button">Reset Adjustments</button>
+                </div>
+              </div>
+            </details>
+
+            <!-- Accordion 2: Film Effects (Analog Optical Character) -->
+            <details class="tool-accordion" id="accordion-effects">
+              <summary class="accordion-summary">
+                <span class="accordion-title">
+                  <span class="accordion-icon" aria-hidden="true">🎞</span>
+                  <span>Film Effects</span>
+                </span>
+                <span class="accordion-arrow" aria-hidden="true">▾</span>
+              </summary>
+              <div class="accordion-content">
+                <div class="controls-list">
+                  <!-- Grain -->
+                  <div class="control-row">
+                    <div class="control-header">
+                      <label for="eff-grain" class="control-label">Film Grain</label>
+                      <span class="control-value" id="val-grain">0</span>
+                    </div>
+                    <input type="range" class="slider-input" id="eff-grain" min="0" max="100" value="0" step="1" />
+                  </div>
+                  <!-- Vignette -->
+                  <div class="control-row">
+                    <div class="control-header">
+                      <label for="eff-vignette" class="control-label">Vignette</label>
+                      <span class="control-value" id="val-vignette">0</span>
+                    </div>
+                    <input type="range" class="slider-input" id="eff-vignette" min="0" max="100" value="0" step="1" />
+                  </div>
+                  <!-- Halation -->
+                  <div class="control-row">
+                    <div class="control-header">
+                      <label for="eff-halation" class="control-label">Halation</label>
+                      <span class="control-value" id="val-halation">0</span>
+                    </div>
+                    <input type="range" class="slider-input" id="eff-halation" min="0" max="100" value="0" step="1" />
+                  </div>
+                  <!-- Bloom -->
+                  <div class="control-row">
+                    <div class="control-header">
+                      <label for="eff-bloom" class="control-label">Bloom / Glow</label>
+                      <span class="control-value" id="val-bloom">0</span>
+                    </div>
+                    <input type="range" class="slider-input" id="eff-bloom" min="0" max="100" value="0" step="1" />
+                  </div>
+                  <!-- Fade -->
+                  <div class="control-row">
+                    <div class="control-header">
+                      <label for="eff-fade" class="control-label">Matte Fade</label>
+                      <span class="control-value" id="val-fade">0</span>
+                    </div>
+                    <input type="range" class="slider-input" id="eff-fade" min="0" max="100" value="0" step="1" />
+                  </div>
+                  <div class="controls-divider"></div>
+                  <!-- Light Leak -->
+                  <div class="control-row">
+                    <div class="control-header">
+                      <label for="eff-lightleak" class="control-label">Light Leak</label>
+                      <span class="control-value" id="val-lightleak">0</span>
+                    </div>
+                    <input type="range" class="slider-input" id="eff-lightleak" min="0" max="100" value="0" step="1" />
+                  </div>
+                  <!-- Analog Border -->
+                  <div class="control-row">
+                    <div class="control-header">
+                      <label for="eff-border" class="control-label">Analog Border</label>
+                    </div>
+                    <select class="select-input" id="eff-border" aria-label="Analog border style">
+                      <option value="none">None (Standard)</option>
+                      <option value="black-film">Black Film Frame</option>
+                      <option value="white-film">White Gallery Matte</option>
+                      <option value="35mm-black">35mm Film Strip</option>
+                      <option value="compact">Compact Camera Rounded</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="accordion-footer">
+                  <button class="button button-text panel-reset-link" id="reset-effects-link" type="button">Reset Effects</button>
+                </div>
+              </div>
+            </details>
+
+            <!-- Contextual Reset All -->
+            <div class="reset-all-wrap">
+              <button class="button button-text reset-all-link" id="reset-all-link" type="button">
+                Reset All Edits
+              </button>
+            </div>
+
+          </div>
+        </section>
+      </div>
+
+      <!-- Studio Footer -->
+      <footer class="site-footer">
+        <div class="future-tools" aria-label="Upcoming analog features">
+          <p>LAB ROADMAP</p>
+          <div class="future-tools-list">
+            <span class="tag-active">Film Looks (56)</span>
+            <span class="tag-active">1998 Cam Collection</span>
+            <span class="tag-active">Adjustments</span>
+            <span class="tag-active">Light Leaks</span>
+            <span class="tag-active">Analog Borders</span>
+            <span class="tag-active">Full-Res Export</span>
+            <span>Date Stamp (Phase 4)</span>
+            <span>Custom Recipes</span>
+          </div>
+        </div>
+      </footer>
+    </main>
+
+    <script type="module" src="src/app.js"></script>
+  </body>
+</html>

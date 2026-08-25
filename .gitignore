@@ -1,0 +1,12 @@
+# Development & scratch artifacts
+scratch/
+outputs/
+work/
+calibration_photo.png
+.tempmediaStorage/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
