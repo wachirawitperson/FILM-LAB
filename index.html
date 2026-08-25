@@ -232,7 +232,10 @@
                   <div class="control-row">
                     <div class="control-header">
                       <label for="adj-exposure" class="control-label">Exposure</label>
-                      <span class="control-value" id="val-exposure">0</span>
+                      <div class="control-value-group">
+                        <span class="control-value" id="val-exposure">0</span>
+                        <button class="control-reset-btn" id="reset-adj-exposure" type="button" aria-label="Reset Exposure" title="Reset Exposure" disabled>↺</button>
+                      </div>
                     </div>
                     <input type="range" class="slider-input" id="adj-exposure" min="-100" max="100" value="0" step="1" />
                   </div>
@@ -240,7 +243,10 @@
                   <div class="control-row">
                     <div class="control-header">
                       <label for="adj-contrast" class="control-label">Contrast</label>
-                      <span class="control-value" id="val-contrast">0</span>
+                      <div class="control-value-group">
+                        <span class="control-value" id="val-contrast">0</span>
+                        <button class="control-reset-btn" id="reset-adj-contrast" type="button" aria-label="Reset Contrast" title="Reset Contrast" disabled>↺</button>
+                      </div>
                     </div>
                     <input type="range" class="slider-input" id="adj-contrast" min="-100" max="100" value="0" step="1" />
                   </div>
@@ -248,7 +254,10 @@
                   <div class="control-row">
                     <div class="control-header">
                       <label for="adj-highlights" class="control-label">Highlights</label>
-                      <span class="control-value" id="val-highlights">0</span>
+                      <div class="control-value-group">
+                        <span class="control-value" id="val-highlights">0</span>
+                        <button class="control-reset-btn" id="reset-adj-highlights" type="button" aria-label="Reset Highlights" title="Reset Highlights" disabled>↺</button>
+                      </div>
                     </div>
                     <input type="range" class="slider-input" id="adj-highlights" min="-100" max="100" value="0" step="1" />
                   </div>
@@ -256,7 +265,10 @@
                   <div class="control-row">
                     <div class="control-header">
                       <label for="adj-shadows" class="control-label">Shadows</label>
-                      <span class="control-value" id="val-shadows">0</span>
+                      <div class="control-value-group">
+                        <span class="control-value" id="val-shadows">0</span>
+                        <button class="control-reset-btn" id="reset-adj-shadows" type="button" aria-label="Reset Shadows" title="Reset Shadows" disabled>↺</button>
+                      </div>
                     </div>
                     <input type="range" class="slider-input" id="adj-shadows" min="-100" max="100" value="0" step="1" />
                   </div>
@@ -264,7 +276,10 @@
                   <div class="control-row">
                     <div class="control-header">
                       <label for="adj-temperature" class="control-label">Temperature</label>
-                      <span class="control-value" id="val-temperature">0</span>
+                      <div class="control-value-group">
+                        <span class="control-value" id="val-temperature">0</span>
+                        <button class="control-reset-btn" id="reset-adj-temperature" type="button" aria-label="Reset Temperature" title="Reset Temperature" disabled>↺</button>
+                      </div>
                     </div>
                     <input type="range" class="slider-input" id="adj-temperature" min="-100" max="100" value="0" step="1" />
                   </div>
@@ -272,7 +287,10 @@
                   <div class="control-row">
                     <div class="control-header">
                       <label for="adj-tint" class="control-label">Tint</label>
-                      <span class="control-value" id="val-tint">0</span>
+                      <div class="control-value-group">
+                        <span class="control-value" id="val-tint">0</span>
+                        <button class="control-reset-btn" id="reset-adj-tint" type="button" aria-label="Reset Tint" title="Reset Tint" disabled>↺</button>
+                      </div>
                     </div>
                     <input type="range" class="slider-input" id="adj-tint" min="-100" max="100" value="0" step="1" />
                   </div>
@@ -280,7 +298,10 @@
                   <div class="control-row">
                     <div class="control-header">
                       <label for="adj-saturation" class="control-label">Saturation</label>
-                      <span class="control-value" id="val-saturation">0</span>
+                      <div class="control-value-group">
+                        <span class="control-value" id="val-saturation">0</span>
+                        <button class="control-reset-btn" id="reset-adj-saturation" type="button" aria-label="Reset Saturation" title="Reset Saturation" disabled>↺</button>
+                      </div>
                     </div>
                     <input type="range" class="slider-input" id="adj-saturation" min="-100" max="100" value="0" step="1" />
                   </div>
@@ -306,7 +327,10 @@
                   <div class="control-row">
                     <div class="control-header">
                       <label for="eff-grain" class="control-label">Film Grain</label>
-                      <span class="control-value" id="val-grain">0</span>
+                      <div class="control-value-group">
+                        <span class="control-value" id="val-grain">0</span>
+                        <button class="control-reset-btn" id="reset-eff-grain" type="button" aria-label="Reset Film Grain" title="Reset Film Grain" disabled>↺</button>
+                      </div>
                     </div>
                     <input type="range" class="slider-input" id="eff-grain" min="0" max="100" value="0" step="1" />
                   </div>
@@ -314,7 +338,10 @@
                   <div class="control-row">
                     <div class="control-header">
                       <label for="eff-vignette" class="control-label">Vignette</label>
-                      <span class="control-value" id="val-vignette">0</span>
+                      <div class="control-value-group">
+                        <span class="control-value" id="val-vignette">0</span>
+                        <button class="control-reset-btn" id="reset-eff-vignette" type="button" aria-label="Reset Vignette" title="Reset Vignette" disabled>↺</button>
+                      </div>
                     </div>
                     <input type="range" class="slider-input" id="eff-vignette" min="0" max="100" value="0" step="1" />
                   </div>
@@ -322,7 +349,10 @@
                   <div class="control-row">
                     <div class="control-header">
                       <label for="eff-halation" class="control-label">Halation</label>
-                      <span class="control-value" id="val-halation">0</span>
+                      <div class="control-value-group">
+                        <span class="control-value" id="val-halation">0</span>
+                        <button class="control-reset-btn" id="reset-eff-halation" type="button" aria-label="Reset Halation" title="Reset Halation" disabled>↺</button>
+                      </div>
                     </div>
                     <input type="range" class="slider-input" id="eff-halation" min="0" max="100" value="0" step="1" />
                   </div>
@@ -330,7 +360,10 @@
                   <div class="control-row">
                     <div class="control-header">
                       <label for="eff-bloom" class="control-label">Bloom / Glow</label>
-                      <span class="control-value" id="val-bloom">0</span>
+                      <div class="control-value-group">
+                        <span class="control-value" id="val-bloom">0</span>
+                        <button class="control-reset-btn" id="reset-eff-bloom" type="button" aria-label="Reset Bloom / Glow" title="Reset Bloom / Glow" disabled>↺</button>
+                      </div>
                     </div>
                     <input type="range" class="slider-input" id="eff-bloom" min="0" max="100" value="0" step="1" />
                   </div>
@@ -338,7 +371,10 @@
                   <div class="control-row">
                     <div class="control-header">
                       <label for="eff-fade" class="control-label">Matte Fade</label>
-                      <span class="control-value" id="val-fade">0</span>
+                      <div class="control-value-group">
+                        <span class="control-value" id="val-fade">0</span>
+                        <button class="control-reset-btn" id="reset-eff-fade" type="button" aria-label="Reset Matte Fade" title="Reset Matte Fade" disabled>↺</button>
+                      </div>
                     </div>
                     <input type="range" class="slider-input" id="eff-fade" min="0" max="100" value="0" step="1" />
                   </div>
@@ -347,7 +383,10 @@
                   <div class="control-row">
                     <div class="control-header">
                       <label for="eff-lightleak" class="control-label">Light Leak</label>
-                      <span class="control-value" id="val-lightleak">0</span>
+                      <div class="control-value-group">
+                        <span class="control-value" id="val-lightleak">0</span>
+                        <button class="control-reset-btn" id="reset-eff-lightleak" type="button" aria-label="Reset Light Leak" title="Reset Light Leak" disabled>↺</button>
+                      </div>
                     </div>
                     <input type="range" class="slider-input" id="eff-lightleak" min="0" max="100" value="0" step="1" />
                   </div>
@@ -355,6 +394,9 @@
                   <div class="control-row">
                     <div class="control-header">
                       <label for="eff-border" class="control-label">Analog Border</label>
+                      <div class="control-value-group">
+                        <button class="control-reset-btn" id="reset-eff-border" type="button" aria-label="Reset Analog Border" title="Reset Analog Border" disabled>↺</button>
+                      </div>
                     </div>
                     <select class="select-input" id="eff-border" aria-label="Analog border style">
                       <option value="none">None (Standard)</option>
@@ -365,6 +407,7 @@
                     </select>
                   </div>
                 </div>
+
                 <div class="accordion-footer">
                   <button class="button button-text panel-reset-link" id="reset-effects-link" type="button">Reset Effects</button>
                 </div>

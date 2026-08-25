@@ -1225,13 +1225,19 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .control-header {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
 }
 
 .control-label {
   font-size: .84rem;
   font-weight: 600;
   color: var(--ink);
+}
+
+.control-value-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .control-value {
@@ -1245,6 +1251,55 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   min-width: 32px;
   text-align: center;
 }
+
+.control-reset-btn {
+  background: transparent;
+  border: none;
+  font-size: .92rem;
+  line-height: 1;
+  color: var(--muted-light);
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: transform .15s ease, color .12s ease, opacity .12s ease, background-color .12s ease;
+  user-select: none;
+}
+
+.control-reset-btn:hover:not(:disabled) {
+  color: var(--accent);
+  background: rgba(0, 0, 0, 0.05);
+  transform: rotate(-45deg);
+}
+
+.control-reset-btn:disabled {
+  opacity: 0.25;
+  cursor: default;
+  pointer-events: none;
+}
+
+.control-reset-btn:not(:disabled) {
+  opacity: 1;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+@media (pointer: coarse) {
+  .control-reset-btn {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    font-size: 1.05rem;
+  }
+}
+
 
 /* Custom Analog Range Sliders */
 .slider-input {

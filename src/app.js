@@ -318,6 +318,13 @@ const el = {
   valTemperature: $("val-temperature"),
   valTint: $("val-tint"),
   valSaturation: $("val-saturation"),
+  resetAdjExposure: $("reset-adj-exposure"),
+  resetAdjContrast: $("reset-adj-contrast"),
+  resetAdjHighlights: $("reset-adj-highlights"),
+  resetAdjShadows: $("reset-adj-shadows"),
+  resetAdjTemperature: $("reset-adj-temperature"),
+  resetAdjTint: $("reset-adj-tint"),
+  resetAdjSaturation: $("reset-adj-saturation"),
   
   effGrain: $("eff-grain"),
   effVignette: $("eff-vignette"),
@@ -331,8 +338,16 @@ const el = {
   valHalation: $("val-halation"),
   valBloom: $("val-bloom"),
   valFade: $("val-fade"),
-  valLightLeak: $("val-lightleak")
+  valLightLeak: $("val-lightleak"),
+  resetEffGrain: $("reset-eff-grain"),
+  resetEffVignette: $("reset-eff-vignette"),
+  resetEffHalation: $("reset-eff-halation"),
+  resetEffBloom: $("reset-eff-bloom"),
+  resetEffFade: $("reset-eff-fade"),
+  resetEffLightLeak: $("reset-eff-lightleak"),
+  resetEffBorder: $("reset-eff-border")
 };
+
 
 const state = {
   sourceImage: null,
@@ -800,6 +815,7 @@ function selectPreset(p) {
   updateLookDetail();
   renderRecentRow();
   renderGrid();
+  updateResetBtnStates();
   queue();
 }
 
@@ -967,6 +983,38 @@ function renderGrid() {
 const adjustKeys = ["exposure", "contrast", "highlights", "shadows", "temperature", "tint", "saturation"];
 const effectKeys = ["grain", "vignette", "halation", "bloom", "fade", "lightLeak"];
 
+function updateResetBtnStates() {
+  adjustKeys.forEach(k => {
+    const cap = k.charAt(0).toUpperCase() + k.slice(1);
+    const btn = el[`resetAdj${cap}`];
+    const isDirty = (state.adjustments[k] || 0) !== DEFAULT_ADJUSTMENTS[k];
+    if (btn) btn.disabled = !isDirty;
+  });
+
+  effectKeys.forEach(k => {
+    const cap = k.charAt(0).toUpperCase() + k.slice(1);
+    const btn = el[`resetEff${cap}`];
+    const isDirty = (state.effects[k] || 0) !== DEFAULT_EFFECTS[k];
+    if (btn) btn.disabled = !isDirty;
+  });
+
+  if (el.resetEffBorder) {
+    el.resetEffBorder.disabled = (state.effects.border || "none") === DEFAULT_EFFECTS.border;
+  }
+
+  const hasAdjChanges = adjustKeys.some(k => (state.adjustments[k] || 0) !== DEFAULT_ADJUSTMENTS[k]);
+  if (el.resetAdjLink) el.resetAdjLink.disabled = !hasAdjChanges;
+  if (el.btnResetAdj) el.btnResetAdj.disabled = !hasAdjChanges;
+
+  const hasEffChanges = effectKeys.some(k => (state.effects[k] || 0) !== DEFAULT_EFFECTS[k]) || (state.effects.border || "none") !== DEFAULT_EFFECTS.border;
+  if (el.resetEffLink) el.resetEffLink.disabled = !hasEffChanges;
+  if (el.btnResetEff) el.btnResetEff.disabled = !hasEffChanges;
+
+  const hasAnyChanges = state.activePreset !== null || hasAdjChanges || hasEffChanges;
+  if (el.resetAllLink) el.resetAllLink.disabled = !hasAnyChanges;
+  if (el.btnResetAll) el.btnResetAll.disabled = !hasAnyChanges;
+}
+
 function syncAdjustmentSliders() {
   adjustKeys.forEach(k => {
     const val = state.adjustments[k] || 0;
@@ -975,6 +1023,7 @@ function syncAdjustmentSliders() {
     if (input) input.value = val;
     if (badge) badge.textContent = formatVal(val);
   });
+  updateResetBtnStates();
 }
 
 function syncEffectSliders() {
@@ -986,6 +1035,36 @@ function syncEffectSliders() {
     if (badge) badge.textContent = formatVal(val);
   });
   if (el.effBorder) el.effBorder.value = state.effects.border || "none";
+  updateResetBtnStates();
+}
+
+function resetSingleAdjustment(k) {
+  state.adjustments[k] = DEFAULT_ADJUSTMENTS[k];
+  const cap = k.charAt(0).toUpperCase() + k.slice(1);
+  const input = el[`adj${cap}`];
+  const badge = el[`val${cap}`];
+  if (input) input.value = DEFAULT_ADJUSTMENTS[k];
+  if (badge) badge.textContent = formatVal(DEFAULT_ADJUSTMENTS[k]);
+  updateResetBtnStates();
+  queue();
+}
+
+function resetSingleEffect(k) {
+  state.effects[k] = DEFAULT_EFFECTS[k];
+  const cap = k.charAt(0).toUpperCase() + k.slice(1);
+  const input = el[`eff${cap}`];
+  const badge = el[`val${cap}`];
+  if (input) input.value = DEFAULT_EFFECTS[k];
+  if (badge) badge.textContent = formatVal(DEFAULT_EFFECTS[k]);
+  updateResetBtnStates();
+  queue();
+}
+
+function resetSingleBorder() {
+  state.effects.border = DEFAULT_EFFECTS.border;
+  if (el.effBorder) el.effBorder.value = DEFAULT_EFFECTS.border;
+  updateResetBtnStates();
+  queue();
 }
 
 function setupSliders() {
@@ -994,8 +1073,14 @@ function setupSliders() {
     const input = el[`adj${cap}`];
     const badge = el[`val${cap}`];
     if (!input) return;
-    input.oninput = e => { const v = parseInt(e.target.value, 10) || 0; state.adjustments[k] = v; if (badge) badge.textContent = formatVal(v); queue(); };
-    input.ondblclick = () => { input.value = 0; state.adjustments[k] = 0; if (badge) badge.textContent = "0"; queue(); };
+    input.oninput = e => {
+      const v = parseInt(e.target.value, 10) || 0;
+      state.adjustments[k] = v;
+      if (badge) badge.textContent = formatVal(v);
+      updateResetBtnStates();
+      queue();
+    };
+    input.ondblclick = () => resetSingleAdjustment(k);
   });
 
   effectKeys.forEach(k => {
@@ -1003,13 +1088,20 @@ function setupSliders() {
     const input = el[`eff${cap}`];
     const badge = el[`val${cap}`];
     if (!input) return;
-    input.oninput = e => { const v = parseInt(e.target.value, 10) || 0; state.effects[k] = v; if (badge) badge.textContent = formatVal(v); queue(); };
-    input.ondblclick = () => { input.value = 0; state.effects[k] = 0; if (badge) badge.textContent = "0"; queue(); };
+    input.oninput = e => {
+      const v = parseInt(e.target.value, 10) || 0;
+      state.effects[k] = v;
+      if (badge) badge.textContent = formatVal(v);
+      updateResetBtnStates();
+      queue();
+    };
+    input.ondblclick = () => resetSingleEffect(k);
   });
 
   if (el.effBorder) {
     el.effBorder.onchange = e => {
       state.effects.border = e.target.value;
+      updateResetBtnStates();
       queue();
     };
   }
@@ -1022,6 +1114,7 @@ function resetLook() {
   updateLookDetail();
   renderRecentRow();
   renderGrid();
+  updateResetBtnStates();
   queue();
 }
 
@@ -1056,6 +1149,37 @@ function setupResetControls() {
   if (el.resetAdjLink) el.resetAdjLink.onclick = resetAdjustments;
   if (el.resetEffLink) el.resetEffLink.onclick = resetEffects;
   if (el.resetAllLink) el.resetAllLink.onclick = resetAll;
+
+  // Individual Per-Control Resets
+  adjustKeys.forEach(k => {
+    const cap = k.charAt(0).toUpperCase() + k.slice(1);
+    const btn = el[`resetAdj${cap}`];
+    if (btn) {
+      btn.onclick = e => {
+        e.stopPropagation();
+        resetSingleAdjustment(k);
+      };
+    }
+  });
+
+  effectKeys.forEach(k => {
+    const cap = k.charAt(0).toUpperCase() + k.slice(1);
+    const btn = el[`resetEff${cap}`];
+    if (btn) {
+      btn.onclick = e => {
+        e.stopPropagation();
+        resetSingleEffect(k);
+      };
+    }
+  });
+
+  if (el.resetEffBorder) {
+    el.resetEffBorder.onclick = e => {
+      e.stopPropagation();
+      resetSingleBorder();
+    };
+  }
+
   if (el.resetMenuBtn) {
     el.resetMenuBtn.onclick = e => { e.stopPropagation(); if (el.resetDropdown) { el.resetDropdown.hidden = !el.resetDropdown.hidden; el.resetMenuBtn.setAttribute("aria-expanded", String(!el.resetDropdown.hidden)); } };
     document.addEventListener("click", () => { if (el.resetDropdown && !el.resetDropdown.hidden) { el.resetDropdown.hidden = true; el.resetMenuBtn.setAttribute("aria-expanded", "false"); } });
@@ -1065,6 +1189,7 @@ function setupResetControls() {
   if (el.btnResetEff) el.btnResetEff.onclick = () => { resetEffects(); if (el.resetDropdown) el.resetDropdown.hidden = true; };
   if (el.btnResetAll) el.btnResetAll.onclick = () => { resetAll(); if (el.resetDropdown) el.resetDropdown.hidden = true; };
 }
+
 
 async function downloadPhoto() {
   if (!state.sourceImage) return;
@@ -1176,6 +1301,7 @@ function remove() {
   if (el.recentSection) el.recentSection.hidden = true;
   clear();
   el.input.value = "";
+  updateResetBtnStates();
   setProcessingStatus("idle");
 }
 
