@@ -135,13 +135,19 @@
             <div class="status-indicator" id="render-status" aria-live="polite" hidden>Ready</div>
           </div>
 
-          <!-- Filmstrip Bar (Phase 6.3) -->
+          <!-- Filmstrip Bar (Phase 6.3 & 6.4) -->
           <div class="filmstrip-bar" id="filmstrip-bar" role="region" aria-label="Workspace photographs" hidden>
             <div class="filmstrip-track" id="filmstrip-track" role="region" aria-label="Photographs strip"></div>
-            <button class="filmstrip-add-btn" id="filmstrip-add-btn" type="button" aria-label="Add photos to workspace" title="Add photos to workspace">
-              <span class="filmstrip-add-icon" aria-hidden="true">+</span>
-              <span class="filmstrip-add-label">Add</span>
-            </button>
+            <div class="filmstrip-actions">
+              <button class="filmstrip-add-btn" id="filmstrip-add-btn" type="button" aria-label="Add photos to workspace" title="Add photos to workspace">
+                <span class="filmstrip-add-icon" aria-hidden="true">+</span>
+                <span class="filmstrip-add-label">Add</span>
+              </button>
+              <button class="filmstrip-clear-btn" id="filmstrip-clear-btn" type="button" aria-label="Clear all photos from workspace" title="Clear all photos from workspace">
+                <span class="filmstrip-clear-icon" aria-hidden="true">🗑</span>
+                <span class="filmstrip-clear-label">Clear</span>
+              </button>
+            </div>
           </div>
         </section>
 

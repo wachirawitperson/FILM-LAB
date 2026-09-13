@@ -570,7 +570,8 @@ const el = {
   resetEffBorder: $("reset-eff-border"),
   filmstripBar: $("filmstrip-bar"),
   filmstripTrack: $("filmstrip-track"),
-  filmstripAddBtn: $("filmstrip-add-btn")
+  filmstripAddBtn: $("filmstrip-add-btn"),
+  filmstripClearBtn: $("filmstrip-clear-btn")
 };
 
 /* ==================================================
@@ -778,6 +779,17 @@ function removePhoto(id) {
     try { URL.revokeObjectURL(removed.previewUrl); } catch {}
     removed.previewUrl = null;
   }
+  if (removed) {
+    removed.sourceImage = null;
+    if (removed.historyState) {
+      removed.historyState.stack = [];
+      removed.historyState.index = -1;
+    }
+    removed.editState = null;
+    removed.viewState = null;
+  }
+  if (el.input) el.input.value = "";
+
   if (workspace.activePhotoId === id) {
     if (workspace.photos.length > 0) {
       const nextIdx = Math.min(idx, workspace.photos.length - 1);
@@ -788,6 +800,16 @@ function removePhoto(id) {
   } else {
     renderFilmstrip();
   }
+  return true;
+}
+
+function clearWorkspace(skipConfirm = false) {
+  if (workspace.photos.length === 0) return true;
+  if (!skipConfirm && typeof window !== "undefined" && typeof window.confirm === "function") {
+    const ok = window.confirm("Clear all photos from this workspace?");
+    if (!ok) return false;
+  }
+  remove();
   return true;
 }
 
@@ -855,6 +877,27 @@ function renderFilmstrip() {
     thumbWrap.appendChild(img);
     thumbWrap.appendChild(fallback);
 
+    // Remove photo affordance
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "filmstrip-remove-btn";
+    removeBtn.setAttribute("aria-label", `Remove ${photo.name}`);
+    removeBtn.title = `Remove ${photo.name}`;
+    removeBtn.innerHTML = `<span aria-hidden="true">✕</span>`;
+    removeBtn.onclick = (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      removePhoto(photo.id);
+    };
+    removeBtn.onkeydown = (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.stopPropagation();
+        e.preventDefault();
+        removePhoto(photo.id);
+      }
+    };
+    thumbWrap.appendChild(removeBtn);
+
     const label = document.createElement("span");
     label.className = "filmstrip-label";
     label.textContent = photo.name;
@@ -883,11 +926,15 @@ function setupFilmstripControls() {
   if (el.filmstripAddBtn) {
     el.filmstripAddBtn.onclick = choose;
   }
+  if (el.filmstripClearBtn) {
+    el.filmstripClearBtn.onclick = () => clearWorkspace(false);
+  }
   if (el.filmstripTrack) {
     el.filmstripTrack.addEventListener("keydown", e => {
       if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
         const items = Array.from(el.filmstripTrack.querySelectorAll(".filmstrip-item"));
-        const currentIdx = items.indexOf(document.activeElement);
+        const currentItem = document.activeElement ? document.activeElement.closest(".filmstrip-item") : null;
+        const currentIdx = items.indexOf(currentItem);
         if (currentIdx !== -1) {
           e.preventDefault();
           const nextIdx = e.key === "ArrowRight"
@@ -903,6 +950,7 @@ function setupFilmstripControls() {
 workspace.getActivePhoto = getActivePhoto;
 workspace.setActivePhoto = setActivePhoto;
 workspace.removePhoto = removePhoto;
+workspace.clearWorkspace = clearWorkspace;
 
 const state = {
   sourceImage: null,
@@ -2643,7 +2691,7 @@ async function show(file) {
   return ingestFiles([file]);
 }
 
-const choose = () => { clear(); if (el.input) el.input.click(); };
+const choose = () => { clear(); if (el.input) el.input.value = ""; if (el.input) el.input.click(); };
 const files = f => { if (f && f.length) void ingestFiles(f); };
 el.select.onclick = choose;
 el.headerReplace.onclick = choose;
@@ -3144,6 +3192,7 @@ if (typeof window !== "undefined") {
     getActivePhoto,
     setActivePhoto,
     removePhoto,
+    clearWorkspace,
     renderFilmstrip,
     setupFilmstripControls,
     remove,
