@@ -3,6 +3,7 @@
 A calm, tactile digital darkroom web application for discovering authentic analog-inspired film looks, comparing before and after, and creating film-style photographs directly in your browser.
 
 - **56 Analog Film Looks**: 32 Classic recipes + 24 1998 CAM compact-camera looks
+- **Multi-Photo Workspace**: Edit multiple photos concurrently with isolated per-photo recipes, independent undo/redo histories, and tactile filmstrip navigation
 - **Zero Server Footprint**: 100% client-side HTML5 Canvas 2D image processing
 - **Private by Design**: User photos never leave the browser
 - **Zero External Dependencies**: Pure native JavaScript, CSS, and HTML5
