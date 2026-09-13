@@ -4,11 +4,13 @@ const LIMIT = 1400;
 
 const STORAGE_KEYS = {
   FAVORITES: "filmlab-favorites",
-  RECENT: "filmlab-recent"
+  RECENT: "filmlab-recent",
+  CUSTOM: "filmlab-custom-presets"
 };
 
 const cats = [
   ["ALL", "All Looks"],
+  ["CUSTOM", "Custom"],
   ["FAVORITES", "★ Favorites"],
   ["WARM", "Warm"],
   ["SOFT", "Soft"],
@@ -93,6 +95,12 @@ const DEFAULT_EFFECTS = {
   border: "none",
   softness: 0
 };
+
+const adjustKeys = ["exposure", "contrast", "highlights", "shadows", "temperature", "tint", "saturation"];
+const lightKeys = ["exposure", "contrast", "highlights", "shadows"];
+const colorKeys = ["temperature", "tint", "saturation"];
+const effectKeys = ["grain", "vignette", "halation", "bloom", "fade", "lightLeak"];
+
 
 const L = (id, name, category, description, settings, recommendedFor = [], metadata = {}) => ({
   id,
@@ -270,13 +278,122 @@ const lookMoodTags = {
 };
 
 
+function loadCustomPresets() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.CUSTOM);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    let list = [];
+    if (parsed && typeof parsed === "object") {
+      if (Array.isArray(parsed.presets)) {
+        list = parsed.presets;
+      } else if (Array.isArray(parsed)) {
+        list = parsed;
+      }
+    }
+    return list.filter(p => (
+      p &&
+      typeof p === "object" &&
+      typeof p.id === "string" &&
+      p.id.startsWith("custom:") &&
+      typeof p.name === "string" &&
+      p.name.trim().length > 0 &&
+      p.adjustments &&
+      typeof p.adjustments === "object" &&
+      p.effects &&
+      typeof p.effects === "object"
+    )).map(p => {
+      const basePreset = presetLibrary.find(x => x.id === p.basePresetId) || presetLibrary[0];
+      return {
+        ...basePreset,
+        id: p.id,
+        name: p.name.trim(),
+        source: "custom",
+        category: "CUSTOM",
+        basePresetId: p.basePresetId || basePreset.id,
+        basePresetName: p.basePresetName || basePreset.name,
+        adjustments: { ...DEFAULT_ADJUSTMENTS, ...p.adjustments },
+        effects: { ...DEFAULT_EFFECTS, ...p.effects },
+        createdAt: typeof p.createdAt === "number" ? p.createdAt : Date.now(),
+        updatedAt: typeof p.updatedAt === "number" ? p.updatedAt : Date.now()
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
+let customPresets = loadCustomPresets();
+
+function saveCustomPresetsToStorage() {
+  try {
+    const data = {
+      version: 1,
+      presets: customPresets.map(p => ({
+        id: p.id,
+        name: p.name,
+        source: "custom",
+        basePresetId: p.basePresetId,
+        basePresetName: p.basePresetName,
+        adjustments: { ...p.adjustments },
+        effects: { ...p.effects },
+        createdAt: p.createdAt,
+        updatedAt: p.updatedAt
+      }))
+    };
+    localStorage.setItem(STORAGE_KEYS.CUSTOM, JSON.stringify(data));
+    return true;
+  } catch (err) {
+    console.warn("Could not save custom presets:", err);
+    return false;
+  }
+}
+
+function getPresetById(id) {
+  if (!id) return null;
+  return customPresets.find(p => p.id === id) || presetLibrary.find(p => p.id === id) || null;
+}
+
+function getAllPresets() {
+  return [...customPresets, ...presetLibrary];
+}
+
+function getPresetEffectiveParams(preset) {
+  if (preset && preset.source === "custom") {
+    const baseP = presetLibrary.find(p => p.id === preset.basePresetId) || presetLibrary[0];
+    const adjs = preset.adjustments || DEFAULT_ADJUSTMENTS;
+    const effs = preset.effects || DEFAULT_EFFECTS;
+    return {
+      ...baseP,
+      id: preset.id,
+      name: preset.name,
+      exposure: baseP.exposure + (adjs.exposure || 0),
+      contrast: baseP.contrast + (adjs.contrast || 0),
+      highlights: baseP.highlights + (adjs.highlights || 0),
+      shadows: baseP.shadows + (adjs.shadows || 0),
+      temperature: baseP.temperature + (adjs.temperature || 0),
+      tint: baseP.tint + (adjs.tint || 0),
+      saturation: baseP.saturation + (adjs.saturation || 0),
+      grain: Math.max(0, Math.min(100, baseP.grain + (effs.grain || 0))),
+      vignette: Math.max(0, Math.min(100, baseP.vignette + (effs.vignette || 0))),
+      halation: Math.max(0, Math.min(100, baseP.halation + (effs.halation || 0))),
+      bloom: Math.max(0, Math.min(100, baseP.bloom + (effs.bloom || 0))),
+      fade: Math.max(0, Math.min(100, baseP.fade + (effs.fade || 0))),
+      lightLeak: Math.max(0, Math.min(100, baseP.lightLeak + (effs.lightLeak || 0))),
+      border: (effs.border && effs.border !== "none") ? effs.border : baseP.border,
+      softness: effs.softness !== undefined ? effs.softness : baseP.softness
+    };
+  }
+  return preset;
+}
+
 function loadStorageList(key) {
   try {
     const raw = localStorage.getItem(key);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    const validIds = new Set(presetLibrary.map(p => p.id));
+    const validIds = new Set([...presetLibrary.map(p => p.id), ...customPresets.map(p => p.id)]);
     return parsed.filter(id => typeof id === "string" && validIds.has(id));
   } catch {
     return [];
@@ -300,6 +417,9 @@ const el = {
   error: $("upload-error"),
   
   studioHeaderActions: $("studio-header-actions"),
+  historyControls: $("history-controls"),
+  btnUndo: $("btn-undo"),
+  btnRedo: $("btn-redo"),
   headerReplace: $("header-replace-photo"),
   headerRemove: $("header-remove-photo"),
   fileName: $("file-name"),
@@ -349,10 +469,31 @@ const el = {
   accordionAdjust: $("accordion-adjust"),
   accordionEffects: $("accordion-effects"),
   
+  editorTabs: $("editor-tabs"),
+  tabLooks: $("tab-looks"),
+  tabAdjust: $("tab-adjust"),
+  tabFx: $("tab-fx"),
+  mobileActionBar: $("mobile-action-bar"),
+  mobileReplace: $("mobile-replace-photo"),
+  mobileDownload: $("mobile-download-photo"),
+  mobileDownloadText: $("mobile-download-btn-text"),
+
   tabs: $("category-tabs"),
   grid: $("preset-grid"),
 
+  lookSearchBar: $("look-search-bar"),
+  filmSearchInput: $("film-search-input"),
+  filmSearchClear: $("film-search-clear"),
+  discoveryMetaRow: $("discovery-meta-row"),
+  discoveryCount: $("discovery-count"),
+  discoveryFilterChips: $("discovery-filter-chips"),
+  clearAllFilters: $("clear-all-filters"),
+  searchEmptyState: $("search-empty-state"),
+  searchEmptyClearBtn: $("search-empty-clear-btn"),
+
   surpriseBtn: $("surprise-me-btn"),
+  saveLookBtn: $("save-look-btn"),
+  filmIndexAnchor: $("film-index-anchor"),
   moodTabsBar: $("mood-tabs-bar"),
   lookDetailCard: $("look-detail-card"),
   detailPresetName: $("detail-preset-name"),
@@ -361,9 +502,27 @@ const el = {
   detailPresetBestFor: $("detail-preset-bestfor"),
   detailPresetPills: $("detail-preset-pills"),
   detailFavBtn: $("detail-fav-btn"),
+  customDetailActions: $("custom-detail-actions"),
+  detailRenameBtn: $("detail-rename-btn"),
+  detailDeleteBtn: $("detail-delete-btn"),
   recentSection: $("recent-looks-section"),
   recentRow: $("recent-looks-row"),
   favEmptyState: $("favorites-empty-state"),
+  customEmptyState: $("custom-empty-state"),
+
+  customLookDialog: $("custom-look-dialog"),
+  customDialogTitle: $("custom-dialog-title"),
+  customDialogClose: $("custom-dialog-close"),
+  customLookForm: $("custom-look-form"),
+  customLookNameInput: $("custom-look-name-input"),
+  customDialogError: $("custom-dialog-error"),
+  customDialogCancel: $("custom-dialog-cancel"),
+  customDialogSubmit: $("custom-dialog-submit"),
+  customDeleteDialog: $("custom-delete-dialog"),
+  customDeleteTitle: $("custom-delete-title"),
+  customDeleteClose: $("custom-delete-close"),
+  customDeleteCancel: $("custom-delete-cancel"),
+  customDeleteConfirm: $("custom-delete-confirm"),
   
   adjExposure: $("adj-exposure"),
   adjContrast: $("adj-contrast"),
@@ -386,6 +545,8 @@ const el = {
   resetAdjTemperature: $("reset-adj-temperature"),
   resetAdjTint: $("reset-adj-tint"),
   resetAdjSaturation: $("reset-adj-saturation"),
+  resetGroupLight: $("reset-group-light"),
+  resetGroupColor: $("reset-group-color"),
   
   effGrain: $("eff-grain"),
   effVignette: $("eff-vignette"),
@@ -406,9 +567,342 @@ const el = {
   resetEffBloom: $("reset-eff-bloom"),
   resetEffFade: $("reset-eff-fade"),
   resetEffLightLeak: $("reset-eff-lightleak"),
-  resetEffBorder: $("reset-eff-border")
+  resetEffBorder: $("reset-eff-border"),
+  filmstripBar: $("filmstrip-bar"),
+  filmstripTrack: $("filmstrip-track"),
+  filmstripAddBtn: $("filmstrip-add-btn")
 };
 
+/* ==================================================
+   WORKSPACE FOUNDATION (PHASE 6.1)
+   ================================================== */
+const WORKSPACE_MAX_PHOTOS = 20; // Configurable session safety ceiling
+
+const workspace = {
+  photos: [],
+  activePhotoId: null,
+  maxPhotos: WORKSPACE_MAX_PHOTOS
+};
+
+function getActivePhoto() {
+  if (!workspace.activePhotoId) return null;
+  return workspace.photos.find(p => p.id === workspace.activePhotoId) || null;
+}
+
+function createPhotoRecord(file, img, previewUrl) {
+  const photoId = `photo:${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+  const heroPreset = presetLibrary.find(p => p.id === "1998-warm") || presetLibrary[0];
+  const heroPresetId = heroPreset ? heroPreset.id : null;
+  const initialSnapshot = {
+    presetId: heroPresetId,
+    adjustments: { ...DEFAULT_ADJUSTMENTS },
+    effects: { ...DEFAULT_EFFECTS }
+  };
+  return {
+    id: photoId,
+    name: file.name || "Photograph",
+    width: img.naturalWidth || 0,
+    height: img.naturalHeight || 0,
+    fileSize: typeof file.size === "number" ? file.size : 0,
+    previewUrl: previewUrl,
+    sourceImage: img,
+    editState: {
+      activePresetId: heroPresetId,
+      adjustments: { ...DEFAULT_ADJUSTMENTS },
+      effects: { ...DEFAULT_EFFECTS }
+    },
+    historyState: {
+      stack: [initialSnapshot],
+      index: 0
+    },
+    viewState: {
+      compareMode: "edited",
+      splitPos: 50,
+      isSplitActive: false
+    },
+    createdAt: Date.now()
+  };
+}
+
+function setActivePhoto(id) {
+  if (!id) {
+    workspace.activePhotoId = null;
+    state.sourceImage = null;
+    state.sourceFileName = "";
+    state.previewUrl = null;
+    return false;
+  }
+  const nextPhoto = workspace.photos.find(p => p.id === id);
+  if (!nextPhoto) return false;
+
+  // If already active, return true immediately
+  if (workspace.activePhotoId === id) return true;
+
+  // 1. Flush previous photo state if any
+  const prevPhoto = getActivePhoto();
+  if (prevPhoto && prevPhoto.id !== id) {
+    prevPhoto.editState.activePresetId = state.activePreset ? state.activePreset.id : null;
+    prevPhoto.editState.adjustments = { ...state.adjustments };
+    prevPhoto.editState.effects = { ...state.effects };
+    prevPhoto.viewState.compareMode = state.compareMode;
+    prevPhoto.viewState.splitPos = state.splitPos;
+    prevPhoto.viewState.isSplitActive = Boolean(state.isSplitActive);
+    prevPhoto.historyState.stack = history.map(snap => ({
+      presetId: snap.presetId,
+      adjustments: { ...snap.adjustments },
+      effects: { ...snap.effects }
+    }));
+    prevPhoto.historyState.index = historyIndex;
+  }
+
+  // 2. Set active photo ID
+  workspace.activePhotoId = id;
+
+  // 3. Ensure editor mode is active
+  if (el.shell && !el.shell.classList.contains("is-editor-mode")) {
+    el.shell.classList.add("is-editor-mode");
+    if (el.introPanel) el.introPanel.hidden = true;
+    if (el.emptyState) el.emptyState.hidden = true;
+    if (el.uploadPanel) el.uploadPanel.hidden = true;
+    if (el.studioHeaderActions) el.studioHeaderActions.hidden = false;
+    if (el.stageToolbar) el.stageToolbar.hidden = false;
+    if (el.stageViewport) el.stageViewport.hidden = false;
+    if (el.studioDock) el.studioDock.hidden = false;
+    if (el.previewStage) el.previewStage.classList.add("has-image");
+    if (el.mobileActionBar) el.mobileActionBar.hidden = false;
+    if (el.saveLookBtn) el.saveLookBtn.disabled = false;
+  }
+
+  // 4. Bind source image & metadata
+  state.sourceImage = nextPhoto.sourceImage;
+  state.sourceFileName = nextPhoto.name;
+  state.previewUrl = nextPhoto.previewUrl;
+  if (el.image) {
+    el.image.src = nextPhoto.previewUrl;
+    el.image.alt = "Preview of " + nextPhoto.name;
+  }
+  const rawName = nextPhoto.name || "Photograph";
+  let displayName = rawName;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const ext = rawName.includes(".") ? rawName.slice(rawName.lastIndexOf(".")) : "";
+  const baseWithoutExt = rawName.includes(".") ? rawName.slice(0, rawName.lastIndexOf(".")) : rawName;
+  if (uuidRegex.test(baseWithoutExt)) {
+    displayName = `Photograph${ext || ".jpg"}`;
+  }
+  if (el.fileName) {
+    el.fileName.textContent = displayName;
+    el.fileName.title = `${displayName} (${nextPhoto.width} × ${nextPhoto.height})`;
+  }
+  if (el.fileDimensions) {
+    const dims = `${nextPhoto.width} × ${nextPhoto.height}`;
+    el.fileDimensions.textContent = dims;
+  }
+  if (el.imageMeta) {
+    el.imageMeta.textContent = `${nextPhoto.width} × ${nextPhoto.height}`;
+    el.imageMeta.hidden = false;
+  }
+
+  // 5. Restore edit state
+  if (nextPhoto.editState && nextPhoto.editState.activePresetId) {
+    state.activePreset = getPresetById(nextPhoto.editState.activePresetId);
+  } else {
+    state.activePreset = null;
+  }
+  state.adjustments = { ...DEFAULT_ADJUSTMENTS, ...(nextPhoto.editState?.adjustments || {}) };
+  state.effects = { ...DEFAULT_EFFECTS, ...(nextPhoto.editState?.effects || {}) };
+
+  // 6. Restore view state
+  state.compareMode = nextPhoto.viewState?.compareMode || "edited";
+  state.splitPos = typeof nextPhoto.viewState?.splitPos === "number" ? nextPhoto.viewState.splitPos : 50;
+  state.isSplitActive = Boolean(nextPhoto.viewState?.isSplitActive);
+  state.previousCompareMode = null;
+  state.isPressHolding = false;
+  state.preHoldMode = null;
+
+  // 7. Restore history state (NO history entry created on switch!)
+  history.length = 0;
+  if (nextPhoto.historyState && Array.isArray(nextPhoto.historyState.stack) && nextPhoto.historyState.stack.length > 0) {
+    nextPhoto.historyState.stack.forEach(snap => {
+      history.push({
+        presetId: snap.presetId,
+        adjustments: { ...snap.adjustments },
+        effects: { ...snap.effects }
+      });
+    });
+    historyIndex = nextPhoto.historyState.index;
+  } else {
+    const initSnap = {
+      presetId: state.activePreset ? state.activePreset.id : null,
+      adjustments: { ...state.adjustments },
+      effects: { ...state.effects }
+    };
+    history.push(initSnap);
+    historyIndex = 0;
+    nextPhoto.historyState = {
+      stack: [initSnap],
+      index: 0
+    };
+  }
+
+  // 8. Update UI controls to reflect restored state
+  if (el.resetLookLink) el.resetLookLink.disabled = !state.activePreset;
+  if (el.btnResetLook) el.btnResetLook.disabled = !state.activePreset;
+  updateLookDetail();
+  renderRecentRow();
+  renderGrid();
+  syncAdjustmentSliders();
+  syncEffectSliders();
+  updateResetBtnStates();
+  setCompareMode(state.compareMode);
+  updateSplitView();
+  updateHistoryUI();
+
+  // 9. Render race condition protection
+  state.token++;
+  if (state.frame) {
+    cancelAnimationFrame(state.frame);
+    state.frame = null;
+  }
+  queue();
+  renderFilmstrip();
+
+  return true;
+}
+
+function removePhoto(id) {
+  if (!id) return false;
+  const idx = workspace.photos.findIndex(p => p.id === id);
+  if (idx === -1) return false;
+  const [removed] = workspace.photos.splice(idx, 1);
+  if (removed && removed.previewUrl) {
+    try { URL.revokeObjectURL(removed.previewUrl); } catch {}
+    removed.previewUrl = null;
+  }
+  if (workspace.activePhotoId === id) {
+    if (workspace.photos.length > 0) {
+      const nextIdx = Math.min(idx, workspace.photos.length - 1);
+      setActivePhoto(workspace.photos[nextIdx].id);
+    } else {
+      remove();
+    }
+  } else {
+    renderFilmstrip();
+  }
+  return true;
+}
+
+function renderFilmstrip() {
+  if (!el.filmstripBar || !el.filmstripTrack) return;
+  const count = workspace.photos.length;
+  if (count === 0 || !el.shell?.classList.contains("is-editor-mode")) {
+    el.filmstripBar.hidden = true;
+    el.filmstripTrack.replaceChildren();
+    return;
+  }
+
+  el.filmstripBar.hidden = false;
+
+  // Fast path: if track children match existing workspace photo IDs, update active attributes
+  const existingItems = Array.from(el.filmstripTrack.children);
+  const isMatch = existingItems.length === count &&
+    existingItems.every((it, i) => it.dataset.photoId === workspace.photos[i]?.id);
+
+  if (isMatch) {
+    existingItems.forEach(it => {
+      const isActive = it.dataset.photoId === workspace.activePhotoId;
+      it.classList.toggle("is-active", isActive);
+      it.setAttribute("aria-pressed", String(isActive));
+    });
+    const activeBtn = el.filmstripTrack.querySelector(".filmstrip-item.is-active");
+    if (activeBtn) {
+      activeBtn.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+    }
+    return;
+  }
+
+  // Rebuild items
+  const frag = document.createDocumentFragment();
+  workspace.photos.forEach(photo => {
+    const isActive = photo.id === workspace.activePhotoId;
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = `filmstrip-item${isActive ? " is-active" : ""}`;
+    item.dataset.photoId = photo.id;
+    item.setAttribute("aria-pressed", String(isActive));
+    item.setAttribute("aria-label", `Switch to photo: ${photo.name}`);
+    item.title = `${photo.name} (${photo.width} × ${photo.height})`;
+
+    const thumbWrap = document.createElement("div");
+    thumbWrap.className = "filmstrip-thumb-wrap";
+
+    const img = document.createElement("img");
+    img.className = "filmstrip-thumb";
+    img.src = photo.previewUrl;
+    img.alt = "";
+    img.loading = "lazy";
+
+    const fallback = document.createElement("span");
+    fallback.className = "filmstrip-thumb-fallback";
+    fallback.setAttribute("aria-hidden", "true");
+    fallback.textContent = "📷";
+    fallback.hidden = true;
+
+    img.onerror = () => {
+      img.style.display = "none";
+      fallback.hidden = false;
+    };
+
+    thumbWrap.appendChild(img);
+    thumbWrap.appendChild(fallback);
+
+    const label = document.createElement("span");
+    label.className = "filmstrip-label";
+    label.textContent = photo.name;
+
+    item.appendChild(thumbWrap);
+    item.appendChild(label);
+
+    item.onclick = () => {
+      if (workspace.activePhotoId !== photo.id) {
+        setActivePhoto(photo.id);
+      }
+    };
+
+    frag.appendChild(item);
+  });
+
+  el.filmstripTrack.replaceChildren(frag);
+
+  const activeBtn = el.filmstripTrack.querySelector(".filmstrip-item.is-active");
+  if (activeBtn) {
+    activeBtn.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+  }
+}
+
+function setupFilmstripControls() {
+  if (el.filmstripAddBtn) {
+    el.filmstripAddBtn.onclick = choose;
+  }
+  if (el.filmstripTrack) {
+    el.filmstripTrack.addEventListener("keydown", e => {
+      if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+        const items = Array.from(el.filmstripTrack.querySelectorAll(".filmstrip-item"));
+        const currentIdx = items.indexOf(document.activeElement);
+        if (currentIdx !== -1) {
+          e.preventDefault();
+          const nextIdx = e.key === "ArrowRight"
+            ? (currentIdx + 1) % items.length
+            : (currentIdx - 1 + items.length) % items.length;
+          items[nextIdx].focus();
+        }
+      }
+    });
+  }
+}
+
+workspace.getActivePhoto = getActivePhoto;
+workspace.setActivePhoto = setActivePhoto;
+workspace.removePhoto = removePhoto;
 
 const state = {
   sourceImage: null,
@@ -416,9 +910,12 @@ const state = {
   previewUrl: null,
   activePreset: null,
   selectedCategory: "ALL",
+  searchQuery: "",
   selectedMood: "ALL",
   compareMode: "edited",
   previousCompareMode: null,
+  isPressHolding: false,
+  preHoldMode: null,
   favorites: new Set(loadStorageList(STORAGE_KEYS.FAVORITES)),
   recentIds: loadStorageList(STORAGE_KEYS.RECENT).slice(0, 8),
   lastSurpriseId: null,
@@ -428,9 +925,11 @@ const state = {
   splitPos: 50,
   isDraggingSplit: false,
   isMoreOpen: false,
+  activePanel: "looks",
   processingStatus: "idle",
   frame: null,
-  token: 0
+  token: 0,
+  isRestoringHistory: false
 };
 
 
@@ -466,7 +965,7 @@ function clear() {
 
 function revoke() {
   if (state.previewUrl) {
-    URL.revokeObjectURL(state.previewUrl);
+    try { URL.revokeObjectURL(state.previewUrl); } catch {}
     state.previewUrl = null;
   }
 }
@@ -688,6 +1187,15 @@ function draw(canvas, src, p, maxEdge = LIMIT) {
 
 function queue() {
   if (!state.sourceImage) return;
+  const activePhoto = getActivePhoto();
+  if (activePhoto) {
+    activePhoto.editState.activePresetId = state.activePreset ? state.activePreset.id : null;
+    activePhoto.editState.adjustments = { ...state.adjustments };
+    activePhoto.editState.effects = { ...state.effects };
+    activePhoto.viewState.compareMode = state.compareMode;
+    activePhoto.viewState.splitPos = state.splitPos;
+    activePhoto.viewState.isSplitActive = Boolean(state.isSplitActive);
+  }
   if (state.frame) cancelAnimationFrame(state.frame);
   const token = ++state.token;
   setProcessingStatus("rendering");
@@ -703,35 +1211,69 @@ function queue() {
 
 function setCompareMode(mode) {
   state.compareMode = mode;
+  const activePhoto = getActivePhoto();
+  if (activePhoto) {
+    activePhoto.viewState.compareMode = mode;
+    activePhoto.viewState.isSplitActive = (mode === "split");
+  }
   if (mode === "original") {
     state.isSplitActive = false;
     el.gradedLayer.classList.add("is-holding-original");
-    el.splitDivider.hidden = true;
-    el.badgeOriginal.hidden = false;
-    el.badgeEdited.hidden = true;
-    if (el.compareOriginal) el.compareOriginal.classList.add("is-active");
-    if (el.compareSplit) el.compareSplit.classList.remove("is-active");
-    if (el.compareEdited) el.compareEdited.classList.remove("is-active");
+    el.gradedLayer.style.clipPath = "none";
+    if (el.splitDivider) el.splitDivider.hidden = true;
+    if (el.badgeOriginal) el.badgeOriginal.hidden = false;
+    if (el.badgeEdited) el.badgeEdited.hidden = true;
+    if (el.compareOriginal) {
+      el.compareOriginal.classList.add("is-active");
+      el.compareOriginal.setAttribute("aria-pressed", "true");
+    }
+    if (el.compareSplit) {
+      el.compareSplit.classList.remove("is-active");
+      el.compareSplit.setAttribute("aria-pressed", "false");
+    }
+    if (el.compareEdited) {
+      el.compareEdited.classList.remove("is-active");
+      el.compareEdited.setAttribute("aria-pressed", "false");
+    }
   } else if (mode === "split") {
     state.isSplitActive = true;
     el.gradedLayer.classList.remove("is-holding-original");
-    el.splitDivider.hidden = false;
-    el.badgeOriginal.hidden = false;
-    el.badgeEdited.hidden = false;
-    if (el.compareOriginal) el.compareOriginal.classList.remove("is-active");
-    if (el.compareSplit) el.compareSplit.classList.add("is-active");
-    if (el.compareEdited) el.compareEdited.classList.remove("is-active");
+    if (el.splitDivider) el.splitDivider.hidden = false;
+    if (el.badgeOriginal) el.badgeOriginal.hidden = false;
+    if (el.badgeEdited) el.badgeEdited.hidden = false;
+    if (el.compareOriginal) {
+      el.compareOriginal.classList.remove("is-active");
+      el.compareOriginal.setAttribute("aria-pressed", "false");
+    }
+    if (el.compareSplit) {
+      el.compareSplit.classList.add("is-active");
+      el.compareSplit.setAttribute("aria-pressed", "true");
+    }
+    if (el.compareEdited) {
+      el.compareEdited.classList.remove("is-active");
+      el.compareEdited.setAttribute("aria-pressed", "false");
+    }
     updateSplitView();
   } else {
+    state.compareMode = "edited";
     state.isSplitActive = false;
     el.gradedLayer.classList.remove("is-holding-original");
     el.gradedLayer.style.clipPath = "none";
-    el.splitDivider.hidden = true;
-    el.badgeOriginal.hidden = true;
-    el.badgeEdited.hidden = true;
-    if (el.compareOriginal) el.compareOriginal.classList.remove("is-active");
-    if (el.compareSplit) el.compareSplit.classList.remove("is-active");
-    if (el.compareEdited) el.compareEdited.classList.add("is-active");
+    if (el.splitDivider) el.splitDivider.hidden = true;
+    if (el.badgeOriginal) el.badgeOriginal.hidden = true;
+    if (el.badgeEdited) el.badgeEdited.hidden = true;
+    if (el.compareOriginal) {
+      el.compareOriginal.classList.remove("is-active");
+      el.compareOriginal.setAttribute("aria-pressed", "false");
+    }
+    if (el.compareSplit) {
+      el.compareSplit.classList.remove("is-active");
+      el.compareSplit.setAttribute("aria-pressed", "false");
+    }
+    if (el.compareEdited) {
+      el.compareEdited.classList.add("is-active");
+      el.compareEdited.setAttribute("aria-pressed", "true");
+    }
   }
   if (el.toggleSplit) el.toggleSplit.setAttribute("aria-pressed", String(state.isSplitActive));
 }
@@ -743,22 +1285,26 @@ function updateSplitView() {
     el.splitHandle.setAttribute("aria-valuenow", String(Math.round(state.splitPos)));
   }
   if (state.isSplitActive) {
-    el.splitDivider.hidden = false;
-    el.badgeOriginal.hidden = false;
-    el.badgeEdited.hidden = false;
+    if (el.splitDivider) el.splitDivider.hidden = false;
+    if (el.badgeOriginal) el.badgeOriginal.hidden = false;
+    if (el.badgeEdited) el.badgeEdited.hidden = false;
     if (el.toggleSplit) el.toggleSplit.setAttribute("aria-pressed", "true");
-    if (el.compareSplit) el.compareSplit.classList.add("is-active");
+    if (el.compareSplit) {
+      el.compareSplit.classList.add("is-active");
+      el.compareSplit.setAttribute("aria-pressed", "true");
+    }
     el.gradedLayer.classList.remove("is-holding-original");
     el.gradedLayer.style.clipPath = `polygon(${state.splitPos}% 0, 100% 0, 100% 100%, ${state.splitPos}% 100%)`;
   } else if (state.compareMode === "original") {
-    el.splitDivider.hidden = true;
-    el.badgeOriginal.hidden = false;
-    el.badgeEdited.hidden = true;
+    if (el.splitDivider) el.splitDivider.hidden = true;
+    if (el.badgeOriginal) el.badgeOriginal.hidden = false;
+    if (el.badgeEdited) el.badgeEdited.hidden = true;
     el.gradedLayer.classList.add("is-holding-original");
+    el.gradedLayer.style.clipPath = "none";
   } else {
-    el.splitDivider.hidden = true;
-    el.badgeOriginal.hidden = true;
-    el.badgeEdited.hidden = true;
+    if (el.splitDivider) el.splitDivider.hidden = true;
+    if (el.badgeOriginal) el.badgeOriginal.hidden = true;
+    if (el.badgeEdited) el.badgeEdited.hidden = true;
     if (el.toggleSplit) el.toggleSplit.setAttribute("aria-pressed", "false");
     el.gradedLayer.classList.remove("is-holding-original");
     el.gradedLayer.style.clipPath = "none";
@@ -771,29 +1317,42 @@ function handleSplitDrag(clientX) {
   const x = clientX - rect.left;
   const pct = Math.max(0, Math.min(100, (x / rect.width) * 100));
   state.splitPos = pct;
+  const activePhoto = getActivePhoto();
+  if (activePhoto) {
+    activePhoto.viewState.splitPos = pct;
+  }
   updateSplitView();
+}
+
+function startStageHold(e) {
+  if (!state.sourceImage || !el.shell?.classList.contains("is-editor-mode")) return;
+  if (e && e.target && (e.target.closest("#comparison-bar") || e.target.closest("#split-divider"))) return;
+  if (state.isPressHolding) return;
+
+  state.isPressHolding = true;
+  state.preHoldMode = state.compareMode || "edited";
+  el.gradedLayer.classList.add("is-holding-original");
+  if (el.badgeOriginal) el.badgeOriginal.hidden = false;
+  if (el.badgeEdited) el.badgeEdited.hidden = true;
+  if (el.splitDivider) el.splitDivider.hidden = true;
+}
+
+function stopStageHold() {
+  if (!state.isPressHolding) return;
+  state.isPressHolding = false;
+  el.gradedLayer.classList.remove("is-holding-original");
+  const restoreMode = state.preHoldMode || "edited";
+  state.preHoldMode = null;
+  setCompareMode(restoreMode);
 }
 
 function setupSplitInteractions() {
   if (el.compareOriginal) {
-    el.compareOriginal.onclick = () => setCompareMode(state.compareMode === "original" ? "edited" : "original");
-    el.compareOriginal.addEventListener("pointerdown", e => {
-      e.preventDefault();
-      state.previousCompareMode = state.compareMode || "edited";
-      setCompareMode("original");
-    });
-    const releaseOriginal = () => {
-      if (state.previousCompareMode && state.compareMode === "original") {
-        setCompareMode(state.previousCompareMode);
-        state.previousCompareMode = null;
-      }
-    };
-    window.addEventListener("pointerup", releaseOriginal);
-    window.addEventListener("pointercancel", releaseOriginal);
+    el.compareOriginal.onclick = () => setCompareMode("original");
   }
 
   if (el.compareSplit) {
-    el.compareSplit.onclick = () => setCompareMode(state.isSplitActive ? "edited" : "split");
+    el.compareSplit.onclick = () => setCompareMode("split");
   }
 
   if (el.compareEdited) {
@@ -805,11 +1364,24 @@ function setupSplitInteractions() {
   }
 
   if (el.holdCompare) {
-    const startHold = e => { e.preventDefault(); el.gradedLayer.classList.add("is-holding-original"); };
-    const stopHold = e => { e.preventDefault(); el.gradedLayer.classList.remove("is-holding-original"); };
-    el.holdCompare.addEventListener("pointerdown", startHold);
-    window.addEventListener("pointerup", stopHold);
-    window.addEventListener("pointercancel", stopHold);
+    el.holdCompare.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      startStageHold();
+    });
+    el.holdCompare.addEventListener("pointerup", stopStageHold);
+    el.holdCompare.addEventListener("pointercancel", stopStageHold);
+  }
+
+  // Stage viewport press & hold for temporary Original preview
+  if (el.stageViewport) {
+    el.stageViewport.addEventListener("pointerdown", startStageHold);
+    el.stageViewport.addEventListener("pointerup", stopStageHold);
+    el.stageViewport.addEventListener("pointercancel", stopStageHold);
+    el.stageViewport.addEventListener("pointerleave", (e) => {
+      if (state.isPressHolding && e.target === el.stageViewport) {
+        stopStageHold();
+      }
+    });
   }
 
   const onPointerMove = e => {
@@ -843,23 +1415,30 @@ function setupSplitInteractions() {
   window.addEventListener("pointermove", onPointerMove);
   window.addEventListener("pointerup", onPointerUp);
   window.addEventListener("pointercancel", onPointerUp);
+  window.addEventListener("pointerup", stopStageHold);
+  window.addEventListener("pointercancel", stopStageHold);
 
   if (el.splitHandle) {
     el.splitHandle.addEventListener("keydown", e => {
+      const step = e.shiftKey ? 10 : 5;
       if (e.key === "ArrowLeft" || e.key === "ArrowDown") {
         e.preventDefault();
-        state.splitPos = Math.max(0, state.splitPos - 5);
+        e.stopPropagation();
+        state.splitPos = Math.max(0, state.splitPos - step);
         updateSplitView();
       } else if (e.key === "ArrowRight" || e.key === "ArrowUp") {
         e.preventDefault();
-        state.splitPos = Math.min(100, state.splitPos + 5);
+        e.stopPropagation();
+        state.splitPos = Math.min(100, state.splitPos + step);
         updateSplitView();
       } else if (e.key === "Home") {
         e.preventDefault();
+        e.stopPropagation();
         state.splitPos = 0;
         updateSplitView();
       } else if (e.key === "End") {
         e.preventDefault();
+        e.stopPropagation();
         state.splitPos = 100;
         updateSplitView();
       }
@@ -867,19 +1446,190 @@ function setupSplitInteractions() {
   }
 }
 
-function selectPreset(p) {
-  state.activePreset = p;
-  el.resetLookLink.disabled = false;
-  if (el.btnResetLook) el.btnResetLook.disabled = false;
-  if (p) {
-    state.recentIds = [p.id, ...state.recentIds.filter(id => id !== p.id)].slice(0, 8);
-    saveStorageList(STORAGE_KEYS.RECENT, state.recentIds);
+/* ==================================================
+   EDITOR STATE & UNDO / REDO HISTORY (PHASE 5.0)
+   ================================================== */
+const MAX_HISTORY = 50;
+const history = [];
+let historyIndex = -1;
+
+function createSnapshot() {
+  return {
+    presetId: state.activePreset ? state.activePreset.id : null,
+    adjustments: { ...state.adjustments },
+    effects: { ...state.effects }
+  };
+}
+
+function isSnapshotEqual(a, b) {
+  if (!a || !b) return false;
+  if (a.presetId !== b.presetId) return false;
+  for (const k of adjustKeys) {
+    if ((a.adjustments?.[k] || 0) !== (b.adjustments?.[k] || 0)) return false;
   }
+  for (const k of effectKeys) {
+    if ((a.effects?.[k] || 0) !== (b.effects?.[k] || 0)) return false;
+  }
+  if ((a.effects?.border || "none") !== (b.effects?.border || "none")) return false;
+  if ((a.effects?.softness || 0) !== (b.effects?.softness || 0)) return false;
+  return true;
+}
+
+function updateHistoryUI() {
+  const canUndo = historyIndex > 0;
+  const canRedo = historyIndex >= 0 && historyIndex < history.length - 1;
+
+  if (el.btnUndo) {
+    el.btnUndo.disabled = !canUndo;
+    el.btnUndo.setAttribute("aria-disabled", String(!canUndo));
+  }
+  if (el.btnRedo) {
+    el.btnRedo.disabled = !canRedo;
+    el.btnRedo.setAttribute("aria-disabled", String(!canRedo));
+  }
+}
+
+function recordHistory() {
+  if (state.isRestoringHistory) return;
+  if (!state.sourceImage) return;
+
+  const current = createSnapshot();
+  if (history.length > 0 && isSnapshotEqual(current, history[historyIndex])) {
+    return;
+  }
+
+  // Branching: remove redo entries beyond current pointer
+  if (historyIndex < history.length - 1) {
+    history.splice(historyIndex + 1);
+  }
+
+  history.push(current);
+  if (history.length > MAX_HISTORY) {
+    history.shift();
+    historyIndex = history.length - 1;
+  } else {
+    historyIndex = history.length - 1;
+  }
+  updateHistoryUI();
+
+  const activePhoto = getActivePhoto();
+  if (activePhoto) {
+    activePhoto.editState.activePresetId = current.presetId;
+    activePhoto.editState.adjustments = { ...current.adjustments };
+    activePhoto.editState.effects = { ...current.effects };
+    activePhoto.historyState.stack = history.map(snap => ({
+      presetId: snap.presetId,
+      adjustments: { ...snap.adjustments },
+      effects: { ...snap.effects }
+    }));
+    activePhoto.historyState.index = historyIndex;
+  }
+}
+
+function restoreState(snapshot) {
+  if (!snapshot) return;
+  state.isRestoringHistory = true;
+  try {
+    // 1. Restore preset
+    if (snapshot.presetId) {
+      state.activePreset = getPresetById(snapshot.presetId);
+    } else {
+      state.activePreset = null;
+    }
+    if (el.resetLookLink) el.resetLookLink.disabled = !state.activePreset;
+    if (el.btnResetLook) el.btnResetLook.disabled = !state.activePreset;
+    updateLookDetail();
+    renderRecentRow();
+    renderGrid();
+
+    // 2. Restore adjustments
+    state.adjustments = { ...DEFAULT_ADJUSTMENTS, ...snapshot.adjustments };
+    syncAdjustmentSliders();
+
+    // 3. Restore effects
+    state.effects = { ...DEFAULT_EFFECTS, ...snapshot.effects };
+    syncEffectSliders();
+
+    // 4. Update per-control reset buttons and group resets
+    updateResetBtnStates();
+
+    // 5. Render to canvas
+    queue();
+
+    const activePhoto = getActivePhoto();
+    if (activePhoto) {
+      activePhoto.editState.activePresetId = snapshot.presetId;
+      activePhoto.editState.adjustments = { ...state.adjustments };
+      activePhoto.editState.effects = { ...state.effects };
+    }
+  } finally {
+    state.isRestoringHistory = false;
+  }
+}
+
+function undo() {
+  if (historyIndex > 0) {
+    historyIndex--;
+    restoreState(history[historyIndex]);
+    updateHistoryUI();
+    const activePhoto = getActivePhoto();
+    if (activePhoto) {
+      activePhoto.historyState.index = historyIndex;
+    }
+  }
+}
+
+function redo() {
+  if (historyIndex >= 0 && historyIndex < history.length - 1) {
+    historyIndex++;
+    restoreState(history[historyIndex]);
+    updateHistoryUI();
+    const activePhoto = getActivePhoto();
+    if (activePhoto) {
+      activePhoto.historyState.index = historyIndex;
+    }
+  }
+}
+
+function clearHistory() {
+  history.length = 0;
+  historyIndex = -1;
+  updateHistoryUI();
+  const activePhoto = getActivePhoto();
+  if (activePhoto) {
+    activePhoto.historyState.stack = [];
+    activePhoto.historyState.index = -1;
+  }
+}
+
+function selectPreset(p) {
+  if (typeof p === "string") p = getPresetById(p);
+  if (!p) return;
+  if (state.activePreset && p.id === state.activePreset.id) {
+    if (p.source !== "custom") return;
+    const matches = isSnapshotEqual(
+      { presetId: p.id, adjustments: state.adjustments, effects: state.effects },
+      { presetId: p.id, adjustments: p.adjustments, effects: p.effects }
+    );
+    if (matches) return;
+  }
+  state.activePreset = p;
+  if (p && p.source === "custom") {
+    state.adjustments = { ...DEFAULT_ADJUSTMENTS, ...p.adjustments };
+    state.effects = { ...DEFAULT_EFFECTS, ...p.effects };
+    syncAdjustmentSliders();
+    syncEffectSliders();
+  }
+  if (el.resetLookLink) el.resetLookLink.disabled = false;
+  if (el.btnResetLook) el.btnResetLook.disabled = false;
+  state.recentIds = [p.id, ...state.recentIds.filter(id => id !== p.id)].slice(0, 8);
+  saveStorageList(STORAGE_KEYS.RECENT, state.recentIds);
   updateLookDetail();
   renderRecentRow();
   renderGrid();
   updateResetBtnStates();
   queue();
+  recordHistory();
 }
 
 function toggleFavorite(presetId) {
@@ -899,14 +1649,18 @@ function updateLookDetail() {
   if (el.lookDetailCard) el.lookDetailCard.hidden = false;
   if (el.detailPresetName) el.detailPresetName.textContent = p.name;
   if (el.detailPresetCollection) {
-    if (p.category === "KODAK_FILM" || p.collection === "Kodak Film") {
+    if (p.source === "custom") {
+      el.detailPresetCollection.textContent = "CUSTOM LOOK";
+    } else if (p.category === "KODAK_FILM" || p.collection === "Kodak Film") {
       el.detailPresetCollection.textContent = "KODAK FILM";
     } else {
       el.detailPresetCollection.textContent = cats.find(a => a[0] === p.category)?.[1] || p.collection || p.category;
     }
   }
   if (el.detailPresetDesc) {
-    if (p.category === "KODAK_FILM" || p.collection === "Kodak Film") {
+    if (p.source === "custom") {
+      el.detailPresetDesc.textContent = p.basePresetName ? `Based on ${p.basePresetName}` : "Custom Film Recipe";
+    } else if (p.category === "KODAK_FILM" || p.collection === "Kodak Film") {
       const parts = [];
       if (p.stock) parts.push(p.stock);
       if (p.type) parts.push(p.type.toUpperCase());
@@ -919,17 +1673,40 @@ function updateLookDetail() {
     }
   }
   if (el.detailPresetBestFor) {
-    const bestForStr = p.recommendedFor && p.recommendedFor.length > 0 ? `Best for: ${p.recommendedFor.map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(" · ")}` : "Best for: Daylight · Everyday";
-    el.detailPresetBestFor.textContent = bestForStr;
+    if (p.source === "custom") {
+      const d = p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "Custom";
+      el.detailPresetBestFor.textContent = `Custom Recipe · Saved ${d}`;
+    } else {
+      const bestForStr = p.recommendedFor && p.recommendedFor.length > 0 ? `Best for: ${p.recommendedFor.map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(" · ")}` : "Best for: Daylight · Everyday";
+      el.detailPresetBestFor.textContent = bestForStr;
+    }
+  }
+  if (el.customDetailActions) {
+    el.customDetailActions.hidden = (p.source !== "custom");
   }
   if (el.detailPresetPills) {
-    const tags = lookMoodTags[p.id] || [];
-    el.detailPresetPills.replaceChildren(...tags.map(t => {
-      const span = document.createElement("span");
-      span.className = "detail-pill";
-      span.textContent = t;
-      return span;
-    }));
+    if (p.source === "custom") {
+      const pills = [];
+      if (p.basePresetName) {
+        const span = document.createElement("span");
+        span.className = "detail-pill";
+        span.textContent = `BASE: ${p.basePresetName.toUpperCase()}`;
+        pills.push(span);
+      }
+      const spanCustom = document.createElement("span");
+      spanCustom.className = "detail-pill";
+      spanCustom.textContent = "CUSTOM";
+      pills.push(spanCustom);
+      el.detailPresetPills.replaceChildren(...pills);
+    } else {
+      const tags = lookMoodTags[p.id] || [];
+      el.detailPresetPills.replaceChildren(...tags.map(t => {
+        const span = document.createElement("span");
+        span.className = "detail-pill";
+        span.textContent = t;
+        return span;
+      }));
+    }
   }
   if (el.detailFavBtn) {
     const isFav = state.favorites.has(p.id);
@@ -941,14 +1718,162 @@ function updateLookDetail() {
   }
 }
 
+function matchPresetSearch(p, query) {
+  if (!query) return true;
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+
+  if (p.source === "custom") {
+    const name = (p.name || "").toLowerCase();
+    const baseName = (p.basePresetName || "").toLowerCase();
+    return name.includes(q) || baseName.includes(q) || "custom".includes(q);
+  }
+
+  const name = (p.name || "").toLowerCase();
+  const desc = (p.description || "").toLowerCase();
+  const char = (p.character || "").toLowerCase();
+  const cat = (p.category || "").toLowerCase();
+  const coll = (p.collection || "").toLowerCase();
+  const rec = (Array.isArray(p.recommendedFor) ? p.recommendedFor.join(" ") : "").toLowerCase();
+  const mfg = (p.category === "KODAK_FILM" || p.category === "KODAK" ? (p.manufacturer || "") : "").toLowerCase();
+  const stock = (p.stock || "").toLowerCase();
+  const stockSub = (p.stockSubtitle || "").toLowerCase();
+  const fmt = (p.format || "").toLowerCase();
+  const typ = (p.type || "").toLowerCase();
+  const bal = (p.balance || "").toLowerCase();
+  const iso = p.iso != null ? String(p.iso) : "";
+  const era = (p.era || "").toLowerCase();
+  const grp = (p.group || "").toLowerCase();
+  const moods = (lookMoodTags[p.id] || []).join(" ").toLowerCase();
+  const catHuman = (cats.find(a => a[0] === p.category)?.[1] || "").toLowerCase();
+
+  return name.includes(q) ||
+    desc.includes(q) ||
+    char.includes(q) ||
+    cat.includes(q) ||
+    coll.includes(q) ||
+    rec.includes(q) ||
+    mfg.includes(q) ||
+    stock.includes(q) ||
+    stockSub.includes(q) ||
+    fmt.includes(q) ||
+    typ.includes(q) ||
+    bal.includes(q) ||
+    iso.includes(q) ||
+    era.includes(q) ||
+    grp.includes(q) ||
+    moods.includes(q) ||
+    catHuman.includes(q);
+}
+
+function getFilteredPresets() {
+  let list = [];
+  if (state.selectedCategory === "FAVORITES") {
+    list = getAllPresets().filter(p => state.favorites.has(p.id));
+  } else if (state.selectedCategory === "CUSTOM") {
+    list = customPresets.slice();
+  } else if (state.selectedCategory === "ALL") {
+    list = getAllPresets();
+  } else if (state.selectedCategory === "90S") {
+    list = presetLibrary.filter(p => p.category === "1998" || p.category === "Y2K" || p.category === "DISPOSABLE");
+  } else if (state.selectedCategory === "JAPANESE") {
+    list = presetLibrary.filter(p => p.category === "JAPANESE");
+  } else if (state.selectedCategory === "BW") {
+    list = presetLibrary.filter(p => p.category === "BW" || p.id === "kodak-double-x-5222");
+  } else if (state.selectedCategory === "KODAK_FILM") {
+    list = presetLibrary.filter(p => p.category === "KODAK_FILM" || p.collection === "Kodak Film");
+  } else {
+    const targetMood = state.selectedCategory.toLowerCase();
+    list = presetLibrary.filter(p => (lookMoodTags[p.id] || []).includes(targetMood));
+    if (list.length === 0) list = presetLibrary.filter(p => p.category === state.selectedCategory);
+  }
+
+  const q = (state.searchQuery || "").trim().toLowerCase();
+  if (!q) {
+    return list;
+  }
+
+  const matches = list.filter(p => matchPresetSearch(p, q));
+
+  // Boost exact and prefix name matches, maintaining relative library order
+  return matches.slice().sort((a, b) => {
+    const aName = (a.name || "").toLowerCase();
+    const bName = (b.name || "").toLowerCase();
+    const aPrefix = aName.startsWith(q) ? 2 : aName.includes(q) ? 1 : 0;
+    const bPrefix = bName.startsWith(q) ? 2 : bName.includes(q) ? 1 : 0;
+    if (aPrefix !== bPrefix) return bPrefix - aPrefix;
+    return 0;
+  });
+}
+
+function updateDiscoveryMeta(filteredCount, totalCount) {
+  const totalUniverse = presetLibrary.length + customPresets.length;
+  if (el.filmIndexAnchor) {
+    el.filmIndexAnchor.textContent = `FILM INDEX · ${totalUniverse} LOOKS`;
+  }
+
+  if (el.discoveryCount) {
+    if (state.selectedCategory === "ALL" && !state.searchQuery.trim()) {
+      el.discoveryCount.textContent = `${totalUniverse} looks`;
+    } else {
+      el.discoveryCount.textContent = `Showing ${filteredCount} of ${totalUniverse} looks`;
+    }
+  }
+
+  if (el.discoveryFilterChips) {
+    const chips = [];
+    const q = state.searchQuery.trim();
+    if (q) {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "filter-chip";
+      chip.setAttribute("aria-label", `Remove search filter: ${q}`);
+      chip.innerHTML = `“${q}” <span class="filter-chip-remove" aria-hidden="true">✕</span>`;
+      chip.onclick = () => {
+        state.searchQuery = "";
+        if (el.filmSearchInput) el.filmSearchInput.value = "";
+        if (el.filmSearchClear) el.filmSearchClear.hidden = true;
+        renderGrid();
+        renderRecentRow();
+      };
+      chips.push(chip);
+    }
+
+    if (state.selectedCategory !== "ALL") {
+      const catTuple = cats.find(c => c[0] === state.selectedCategory);
+      const catLabel = catTuple ? catTuple[1].replace("★ ", "") : state.selectedCategory;
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "filter-chip";
+      chip.setAttribute("aria-label", `Remove category filter: ${catLabel}`);
+      chip.innerHTML = `${catLabel} <span class="filter-chip-remove" aria-hidden="true">✕</span>`;
+      chip.onclick = () => {
+        state.selectedCategory = "ALL";
+        state.isMoreOpen = false;
+        renderTabs();
+        renderGrid();
+      };
+      chips.push(chip);
+    }
+
+    el.discoveryFilterChips.replaceChildren(...chips);
+  }
+
+  const hasActiveFilters = Boolean(state.searchQuery.trim() || state.selectedCategory !== "ALL");
+  if (el.clearAllFilters) {
+    el.clearAllFilters.hidden = !hasActiveFilters;
+  }
+}
+
 function renderRecentRow() {
   if (!el.recentSection || !el.recentRow) return;
-  if (!state.recentIds || state.recentIds.length === 0 || !state.sourceImage) {
+  // Hide recently used while user is actively searching
+  if (state.searchQuery.trim().length > 0 || !state.recentIds || state.recentIds.length === 0 || !state.sourceImage) {
     el.recentSection.hidden = true;
     return;
   }
   el.recentSection.hidden = false;
-  const recentPresets = state.recentIds.map(id => presetLibrary.find(p => p.id === id)).filter(Boolean);
+  const recentPresets = state.recentIds.map(id => getPresetById(id)).filter(Boolean);
   el.recentRow.replaceChildren(...recentPresets.map(p => {
     const btn = document.createElement("button");
     btn.type = "button";
@@ -956,7 +1881,7 @@ function renderRecentRow() {
     btn.className = `recent-card${isActive ? " is-active" : ""}`;
     btn.setAttribute("aria-label", `Select recent look ${p.name}`);
     const canvas = document.createElement("canvas");
-    draw(canvas, state.sourceImage, p, 80);
+    draw(canvas, state.sourceImage, getPresetEffectiveParams(p), 80);
     const nameSpan = document.createElement("span");
     nameSpan.textContent = p.name;
     btn.append(canvas, nameSpan);
@@ -967,22 +1892,13 @@ function renderRecentRow() {
 
 function surpriseMe() {
   if (!state.sourceImage) return;
-  let pool = [];
-  if (state.selectedCategory === "FAVORITES") {
-    pool = presetLibrary.filter(p => state.favorites.has(p.id));
-  } else if (state.selectedCategory === "90S") {
-    pool = presetLibrary.filter(p => p.category === "1998" || p.category === "Y2K" || p.category === "DISPOSABLE");
-  } else if (state.selectedCategory === "JAPANESE") {
-    pool = presetLibrary.filter(p => p.category === "JAPANESE");
-  } else if (state.selectedCategory === "BW") {
-    pool = presetLibrary.filter(p => p.category === "BW" || p.id === "kodak-double-x-5222");
-  } else if (state.selectedCategory === "KODAK_FILM") {
-    pool = presetLibrary.filter(p => p.category === "KODAK_FILM" || p.collection === "Kodak Film");
-  } else if (state.selectedCategory !== "ALL") {
-    const targetMood = state.selectedCategory.toLowerCase();
-    pool = presetLibrary.filter(p => (lookMoodTags[p.id] || []).includes(targetMood));
-  }
-  if (pool.length === 0) pool = presetLibrary;
+  const filtered = getFilteredPresets();
+  if (filtered.length === 0) return;
+
+  // Curated film discovery: filter out custom presets if built-in looks are present
+  let pool = filtered.filter(p => p.source !== "custom");
+  if (pool.length === 0) pool = filtered;
+
   let candidates = pool.filter(p => p.id !== state.activePreset?.id && p.id !== state.lastSurpriseId);
   if (candidates.length === 0) candidates = pool.filter(p => p.id !== state.activePreset?.id);
   if (candidates.length === 0) candidates = pool;
@@ -1001,7 +1917,12 @@ function renderTabs() {
   const container = document.createDocumentFragment();
 
   // 1. Primary Category Tabs
-  PRIMARY_CATS.forEach(([id, n]) => {
+  const visiblePrimary = [...PRIMARY_CATS];
+  if (customPresets.length > 0 || state.selectedCategory === "CUSTOM") {
+    visiblePrimary.splice(1, 0, ["CUSTOM", "Custom"]);
+  }
+
+  visiblePrimary.forEach(([id, n]) => {
     const b = document.createElement("button");
     b.type = "button";
     b.className = "category-tab";
@@ -1093,31 +2014,43 @@ function renderTabs() {
 
 function renderGrid() {
   if (!el.grid) return;
-  let list = [];
-  if (state.selectedCategory === "FAVORITES") {
-    list = presetLibrary.filter(p => state.favorites.has(p.id));
-    if (el.favEmptyState) el.favEmptyState.hidden = list.length > 0;
-  } else if (state.selectedCategory === "ALL") {
-    if (el.favEmptyState) el.favEmptyState.hidden = true;
-    list = presetLibrary;
-  } else if (state.selectedCategory === "90S") {
-    if (el.favEmptyState) el.favEmptyState.hidden = true;
-    list = presetLibrary.filter(p => p.category === "1998" || p.category === "Y2K" || p.category === "DISPOSABLE");
-  } else if (state.selectedCategory === "JAPANESE") {
-    if (el.favEmptyState) el.favEmptyState.hidden = true;
-    list = presetLibrary.filter(p => p.category === "JAPANESE");
-  } else if (state.selectedCategory === "BW") {
-    if (el.favEmptyState) el.favEmptyState.hidden = true;
-    list = presetLibrary.filter(p => p.category === "BW" || p.id === "kodak-double-x-5222");
-  } else if (state.selectedCategory === "KODAK_FILM") {
-    if (el.favEmptyState) el.favEmptyState.hidden = true;
-    list = presetLibrary.filter(p => p.category === "KODAK_FILM" || p.collection === "Kodak Film");
+  const list = getFilteredPresets();
+
+  const isSearching = Boolean(state.searchQuery.trim());
+  const isFavoritesCategory = state.selectedCategory === "FAVORITES";
+  const isCustomCategory = state.selectedCategory === "CUSTOM";
+
+  if (list.length === 0) {
+    if (isFavoritesCategory && !isSearching && state.favorites.size === 0) {
+      if (el.favEmptyState) el.favEmptyState.hidden = false;
+      if (el.customEmptyState) el.customEmptyState.hidden = true;
+      if (el.searchEmptyState) el.searchEmptyState.hidden = true;
+    } else if (isCustomCategory && !isSearching && customPresets.length === 0) {
+      if (el.favEmptyState) el.favEmptyState.hidden = true;
+      if (el.customEmptyState) el.customEmptyState.hidden = false;
+      if (el.searchEmptyState) el.searchEmptyState.hidden = true;
+    } else {
+      if (el.favEmptyState) el.favEmptyState.hidden = true;
+      if (el.customEmptyState) el.customEmptyState.hidden = true;
+      if (el.searchEmptyState) {
+        el.searchEmptyState.hidden = false;
+        if (el.searchEmptyClearBtn) {
+          if (isSearching && state.selectedCategory !== "ALL") {
+            el.searchEmptyClearBtn.textContent = "Clear search & filter";
+          } else if (isSearching) {
+            el.searchEmptyClearBtn.textContent = "Clear search";
+          } else {
+            el.searchEmptyClearBtn.textContent = "Show all looks";
+          }
+        }
+      }
+    }
   } else {
     if (el.favEmptyState) el.favEmptyState.hidden = true;
-    const targetMood = state.selectedCategory.toLowerCase();
-    list = presetLibrary.filter(p => (lookMoodTags[p.id] || []).includes(targetMood));
-    if (list.length === 0) list = presetLibrary.filter(p => p.category === state.selectedCategory);
+    if (el.customEmptyState) el.customEmptyState.hidden = true;
+    if (el.searchEmptyState) el.searchEmptyState.hidden = true;
   }
+
   el.grid.replaceChildren(...list.map(p => {
     const b = document.createElement("button");
     const wrap = document.createElement("div");
@@ -1131,16 +2064,54 @@ function renderGrid() {
     favBtn.textContent = isFav ? "♥" : "♡";
     favBtn.onclick = e => { e.stopPropagation(); toggleFavorite(p.id); };
     wrap.append(t, favBtn);
+
+    if (p.source === "custom") {
+      const badge = document.createElement("span");
+      badge.className = "custom-badge";
+      badge.textContent = "Custom";
+      wrap.append(badge);
+
+      const actions = document.createElement("div");
+      actions.className = "preset-card-custom-actions";
+
+      const renameBtn = document.createElement("button");
+      renameBtn.type = "button";
+      renameBtn.className = "card-action-btn";
+      renameBtn.title = "Rename custom look";
+      renameBtn.setAttribute("aria-label", `Rename ${p.name}`);
+      renameBtn.textContent = "✎";
+      renameBtn.onclick = e => {
+        e.stopPropagation();
+        openCustomLookModal("rename", p.id, p.name);
+      };
+
+      const delBtn = document.createElement("button");
+      delBtn.type = "button";
+      delBtn.className = "card-action-btn is-delete";
+      delBtn.title = "Delete custom look";
+      delBtn.setAttribute("aria-label", `Delete ${p.name}`);
+      delBtn.textContent = "✕";
+      delBtn.onclick = e => {
+        e.stopPropagation();
+        openCustomDeleteModal(p.id, p.name);
+      };
+
+      actions.append(renameBtn, delBtn);
+      wrap.append(actions);
+    }
+
     const n = document.createElement("strong");
     const c = document.createElement("small");
     const isActive = state.activePreset?.id === p.id;
     b.type = "button";
-    b.className = `preset-card${isActive ? " is-active" : ""}`;
+    b.className = `preset-card${isActive ? " is-active" : ""}${p.source === "custom" ? " is-custom" : ""}`;
     b.setAttribute("aria-pressed", String(isActive));
-    b.setAttribute("aria-label", `${p.name}, ${p.description}`);
-    if (state.sourceImage) draw(t, state.sourceImage, p, 320);
+    b.setAttribute("aria-label", p.source === "custom" ? `${p.name}, Custom film recipe based on ${p.basePresetName || "built-in look"}` : `${p.name}, ${p.description}`);
+    if (state.sourceImage) draw(t, state.sourceImage, getPresetEffectiveParams(p), 320);
     n.textContent = p.name;
-    if (p.category === "KODAK_FILM" || p.collection === "Kodak Film") {
+    if (p.source === "custom") {
+      c.textContent = p.basePresetName ? `Based on ${p.basePresetName}` : "Custom Look";
+    } else if (p.category === "KODAK_FILM" || p.collection === "Kodak Film") {
       c.textContent = p.stockSubtitle || p.character || p.description;
     } else {
       c.textContent = cats.find(a => a[0] === p.category)?.[1] || p.character || p.description || p.category;
@@ -1149,11 +2120,9 @@ function renderGrid() {
     b.onclick = () => selectPreset(p);
     return b;
   }));
+
+  updateDiscoveryMeta(list.length, presetLibrary.length + customPresets.length);
 }
-
-
-const adjustKeys = ["exposure", "contrast", "highlights", "shadows", "temperature", "tint", "saturation"];
-const effectKeys = ["grain", "vignette", "halation", "bloom", "fade", "lightLeak"];
 
 function updateResetBtnStates() {
   adjustKeys.forEach(k => {
@@ -1177,6 +2146,12 @@ function updateResetBtnStates() {
   const hasAdjChanges = adjustKeys.some(k => (state.adjustments[k] || 0) !== DEFAULT_ADJUSTMENTS[k]);
   if (el.resetAdjLink) el.resetAdjLink.disabled = !hasAdjChanges;
   if (el.btnResetAdj) el.btnResetAdj.disabled = !hasAdjChanges;
+
+  const hasLightChanges = lightKeys.some(k => (state.adjustments[k] || 0) !== DEFAULT_ADJUSTMENTS[k]);
+  if (el.resetGroupLight) el.resetGroupLight.disabled = !hasLightChanges;
+
+  const hasColorChanges = colorKeys.some(k => (state.adjustments[k] || 0) !== DEFAULT_ADJUSTMENTS[k]);
+  if (el.resetGroupColor) el.resetGroupColor.disabled = !hasColorChanges;
 
   const hasEffChanges = effectKeys.some(k => (state.effects[k] || 0) !== DEFAULT_EFFECTS[k]) || (state.effects.border || "none") !== DEFAULT_EFFECTS.border;
   if (el.resetEffLink) el.resetEffLink.disabled = !hasEffChanges;
@@ -1211,6 +2186,7 @@ function syncEffectSliders() {
 }
 
 function resetSingleAdjustment(k) {
+  if (state.adjustments[k] === DEFAULT_ADJUSTMENTS[k]) return;
   state.adjustments[k] = DEFAULT_ADJUSTMENTS[k];
   const cap = k.charAt(0).toUpperCase() + k.slice(1);
   const input = el[`adj${cap}`];
@@ -1219,9 +2195,11 @@ function resetSingleAdjustment(k) {
   if (badge) badge.textContent = formatVal(DEFAULT_ADJUSTMENTS[k]);
   updateResetBtnStates();
   queue();
+  recordHistory();
 }
 
 function resetSingleEffect(k) {
+  if (state.effects[k] === DEFAULT_EFFECTS[k]) return;
   state.effects[k] = DEFAULT_EFFECTS[k];
   const cap = k.charAt(0).toUpperCase() + k.slice(1);
   const input = el[`eff${cap}`];
@@ -1230,13 +2208,16 @@ function resetSingleEffect(k) {
   if (badge) badge.textContent = formatVal(DEFAULT_EFFECTS[k]);
   updateResetBtnStates();
   queue();
+  recordHistory();
 }
 
 function resetSingleBorder() {
+  if (state.effects.border === DEFAULT_EFFECTS.border) return;
   state.effects.border = DEFAULT_EFFECTS.border;
   if (el.effBorder) el.effBorder.value = DEFAULT_EFFECTS.border;
   updateResetBtnStates();
   queue();
+  recordHistory();
 }
 
 function setupSliders() {
@@ -1252,6 +2233,8 @@ function setupSliders() {
       updateResetBtnStates();
       queue();
     };
+    input.onchange = () => recordHistory();
+    input.addEventListener("pointerup", () => recordHistory());
     input.ondblclick = () => resetSingleAdjustment(k);
   });
 
@@ -1267,6 +2250,8 @@ function setupSliders() {
       updateResetBtnStates();
       queue();
     };
+    input.onchange = () => recordHistory();
+    input.addEventListener("pointerup", () => recordHistory());
     input.ondblclick = () => resetSingleEffect(k);
   });
 
@@ -1275,6 +2260,7 @@ function setupSliders() {
       state.effects.border = e.target.value;
       updateResetBtnStates();
       queue();
+      recordHistory();
     };
   }
 }
@@ -1288,18 +2274,55 @@ function resetLook() {
   renderGrid();
   updateResetBtnStates();
   queue();
+  recordHistory();
+}
+
+function resetLightGroup() {
+  const hasChanges = lightKeys.some(k => (state.adjustments[k] || 0) !== DEFAULT_ADJUSTMENTS[k]);
+  if (!hasChanges) return;
+  lightKeys.forEach(k => {
+    state.adjustments[k] = DEFAULT_ADJUSTMENTS[k];
+    const cap = k.charAt(0).toUpperCase() + k.slice(1);
+    const input = el[`adj${cap}`];
+    const badge = el[`val${cap}`];
+    if (input) input.value = DEFAULT_ADJUSTMENTS[k];
+    if (badge) badge.textContent = formatVal(DEFAULT_ADJUSTMENTS[k]);
+  });
+  updateResetBtnStates();
+  queue();
+  recordHistory();
+}
+
+function resetColorGroup() {
+  const hasChanges = colorKeys.some(k => (state.adjustments[k] || 0) !== DEFAULT_ADJUSTMENTS[k]);
+  if (!hasChanges) return;
+  colorKeys.forEach(k => {
+    state.adjustments[k] = DEFAULT_ADJUSTMENTS[k];
+    const cap = k.charAt(0).toUpperCase() + k.slice(1);
+    const input = el[`adj${cap}`];
+    const badge = el[`val${cap}`];
+    if (input) input.value = DEFAULT_ADJUSTMENTS[k];
+    if (badge) badge.textContent = formatVal(DEFAULT_ADJUSTMENTS[k]);
+  });
+  updateResetBtnStates();
+  queue();
+  recordHistory();
 }
 
 function resetAdjustments() {
+  const hasChanges = adjustKeys.some(k => (state.adjustments[k] || 0) !== DEFAULT_ADJUSTMENTS[k]);
+  if (!hasChanges) return;
   state.adjustments = { ...DEFAULT_ADJUSTMENTS };
   syncAdjustmentSliders();
   queue();
+  recordHistory();
 }
 
 function resetEffects() {
   state.effects = { ...DEFAULT_EFFECTS };
   syncEffectSliders();
   queue();
+  recordHistory();
 }
 
 function resetAll() {
@@ -1314,11 +2337,14 @@ function resetAll() {
   renderRecentRow();
   renderGrid();
   queue();
+  recordHistory();
 }
 
 function setupResetControls() {
   if (el.resetLookLink) el.resetLookLink.onclick = resetLook;
   if (el.resetAdjLink) el.resetAdjLink.onclick = resetAdjustments;
+  if (el.resetGroupLight) el.resetGroupLight.onclick = resetLightGroup;
+  if (el.resetGroupColor) el.resetGroupColor.onclick = resetColorGroup;
   if (el.resetEffLink) el.resetEffLink.onclick = resetEffects;
   if (el.resetAllLink) el.resetAllLink.onclick = resetAll;
 
@@ -1366,8 +2392,10 @@ function setupResetControls() {
 async function downloadPhoto() {
   if (!state.sourceImage) return;
   el.downloadBtn.disabled = true;
+  if (el.mobileDownload) el.mobileDownload.disabled = true;
   const origText = el.downloadText ? el.downloadText.textContent : "Download";
   if (el.downloadText) el.downloadText.textContent = "Exporting JPEG...";
+  if (el.mobileDownloadText) el.mobileDownloadText.textContent = "Exporting...";
   setProcessingStatus("exporting");
   try {
     await new Promise(resolve => setTimeout(resolve, 20));
@@ -1396,7 +2424,9 @@ async function downloadPhoto() {
     fail("Export failed. The image may exceed available browser memory.");
   } finally {
     el.downloadBtn.disabled = false;
+    if (el.mobileDownload) el.mobileDownload.disabled = false;
     if (el.downloadText) el.downloadText.textContent = origText;
+    if (el.mobileDownloadText) el.mobileDownloadText.textContent = "Download";
   }
 }
 
@@ -1435,6 +2465,7 @@ function enterEditorMode(file) {
   }
   if (el.resetLookLink) el.resetLookLink.disabled = false;
   if (el.btnResetLook) el.btnResetLook.disabled = false;
+  if (el.saveLookBtn) el.saveLookBtn.disabled = false;
 
   renderTabs();
   renderRecentRow();
@@ -1442,12 +2473,34 @@ function enterEditorMode(file) {
   renderGrid();
   syncAdjustmentSliders();
   syncEffectSliders();
+  state.splitPos = 50;
+  state.previousCompareMode = null;
+  state.isPressHolding = false;
+  state.preHoldMode = null;
   setCompareMode("edited");
+  if (el.mobileActionBar) el.mobileActionBar.hidden = false;
+  setActivePanel("looks");
   queue();
+  renderFilmstrip();
+
+  // Phase 5.0: Initialize fresh history stack with initial state
+  clearHistory();
+  recordHistory();
 }
 
 
 function remove() {
+  for (const p of workspace.photos) {
+    if (p.previewUrl) {
+      try { URL.revokeObjectURL(p.previewUrl); } catch {}
+      p.previewUrl = null;
+    }
+  }
+  workspace.photos = [];
+  workspace.activePhotoId = null;
+  if (el.filmstripBar) el.filmstripBar.hidden = true;
+  if (el.filmstripTrack) el.filmstripTrack.replaceChildren();
+
   revoke();
   state.sourceImage = null;
   state.sourceFileName = "";
@@ -1456,6 +2509,11 @@ function remove() {
   state.effects = { ...DEFAULT_EFFECTS };
   state.isSplitActive = false;
   state.compareMode = "edited";
+  state.previousCompareMode = null;
+  state.isPressHolding = false;
+  state.preHoldMode = null;
+  state.splitPos = 50;
+  setCompareMode("edited");
   state.token++;
   if (state.frame) cancelAnimationFrame(state.frame);
   el.image.removeAttribute("src");
@@ -1471,32 +2529,122 @@ function remove() {
   el.previewStage.classList.remove("has-image");
   if (el.lookDetailCard) el.lookDetailCard.hidden = true;
   if (el.recentSection) el.recentSection.hidden = true;
+  if (el.mobileActionBar) el.mobileActionBar.hidden = true;
+  if (el.saveLookBtn) el.saveLookBtn.disabled = true;
+  if (el.shell) delete el.shell.dataset.activePanel;
+  setActivePanel("looks");
   clear();
-  el.input.value = "";
+  if (el.input) el.input.value = "";
+  state.searchQuery = "";
+  state.selectedCategory = "ALL";
+  if (el.filmSearchInput) el.filmSearchInput.value = "";
+  if (el.filmSearchClear) el.filmSearchClear.hidden = true;
+  if (el.searchEmptyState) el.searchEmptyState.hidden = true;
+  if (el.customEmptyState) el.customEmptyState.hidden = true;
   updateResetBtnStates();
+  clearHistory();
   setProcessingStatus("idle");
 }
 
 const wait = (img, url) => new Promise((ok, no) => { img.onload = ok; img.onerror = () => state.previewUrl === url && no(); });
 
-async function show(file) {
+async function ingestFiles(files, options = {}) {
   clear();
-  if (!TYPES.has(file.type)) { fail("Choose a JPEG, PNG, or WebP image. HEIC files are not supported in this browser version."); el.input.value = ""; return; }
-  if (file.size > MAX) { fail("This photo is larger than 30 MB. Choose a smaller image to keep the editor responsive."); el.input.value = ""; return; }
-  revoke();
-  const url = URL.createObjectURL(file);
-  state.previewUrl = url;
-  state.sourceFileName = file.name;
-  el.image.src = url;
-  try { await wait(el.image, url); } catch { if (state.previewUrl === url) { remove(); fail("This image could not be opened. Try another photo or save it again before uploading."); } return; }
-  if (state.previewUrl !== url) return;
-  state.sourceImage = el.image;
-  el.image.alt = "Preview of " + file.name;
-  enterEditorMode(file);
+  const fileList = Array.from(files || []);
+  if (fileList.length === 0) return { success: false, ingested: 0 };
+
+  const validFiles = [];
+  for (const file of fileList) {
+    if (!TYPES.has(file.type)) {
+      if (fileList.length === 1) {
+        fail("Choose a JPEG, PNG, or WebP image. HEIC files are not supported in this browser version.");
+        if (el.input) el.input.value = "";
+        return { success: false, ingested: 0 };
+      }
+      console.warn(`[FILM LAB] Skipped unsupported file: ${file.name}`);
+      continue;
+    }
+    if (file.size > MAX) {
+      if (fileList.length === 1) {
+        fail("This photo is larger than 30 MB. Choose a smaller image to keep the editor responsive.");
+        if (el.input) el.input.value = "";
+        return { success: false, ingested: 0 };
+      }
+      console.warn(`[FILM LAB] Skipped file exceeding 30MB: ${file.name}`);
+      continue;
+    }
+    validFiles.push(file);
+  }
+
+  if (validFiles.length === 0) {
+    fail("None of the selected files could be processed. Please choose JPEG, PNG, or WebP images under 30 MB.");
+    if (el.input) el.input.value = "";
+    return { success: false, ingested: 0 };
+  }
+
+  const availableSlots = workspace.maxPhotos - workspace.photos.length;
+  if (availableSlots <= 0) {
+    console.warn(`[FILM LAB] Workspace limit of ${workspace.maxPhotos} photos reached.`);
+    return { success: false, ingested: 0, reason: "limit_reached" };
+  }
+  const filesToIngest = validFiles.slice(0, availableSlots);
+
+  const newRecords = [];
+  for (const file of filesToIngest) {
+    try {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = () => {
+          try { URL.revokeObjectURL(url); } catch {}
+          reject(new Error(`Failed to load ${file.name}`));
+        };
+        img.src = url;
+      });
+      const record = createPhotoRecord(file, img, url);
+      newRecords.push({ record, file });
+    } catch (err) {
+      console.warn(`[FILM LAB] Could not load image: ${file.name}`, err);
+    }
+  }
+
+  if (newRecords.length === 0) {
+    fail("This image could not be opened. Try another photo or save it again before uploading.");
+    if (el.input) el.input.value = "";
+    return { success: false, ingested: 0 };
+  }
+
+  const wasEmpty = workspace.photos.length === 0;
+  for (const item of newRecords) {
+    workspace.photos.push(item.record);
+  }
+
+  if (wasEmpty) {
+    const firstItem = newRecords[0];
+    workspace.activePhotoId = firstItem.record.id;
+    state.sourceImage = firstItem.record.sourceImage;
+    state.sourceFileName = firstItem.record.name;
+    state.previewUrl = firstItem.record.previewUrl;
+    el.image.src = firstItem.record.previewUrl;
+    el.image.alt = "Preview of " + firstItem.record.name;
+    enterEditorMode(firstItem.file);
+  } else if (options.forceActive && newRecords.length > 0) {
+    setActivePhoto(newRecords[0].record.id);
+  } else {
+    renderFilmstrip();
+  }
+
+  if (el.input) el.input.value = "";
+  return { success: true, ingested: newRecords.length };
 }
 
-const choose = () => { clear(); el.input.click(); };
-const files = f => { if (f && f[0]) void show(f[0]); };
+async function show(file) {
+  return ingestFiles([file]);
+}
+
+const choose = () => { clear(); if (el.input) el.input.click(); };
+const files = f => { if (f && f.length) void ingestFiles(f); };
 el.select.onclick = choose;
 el.headerReplace.onclick = choose;
 el.headerRemove.onclick = remove;
@@ -1524,17 +2672,454 @@ function setupCategoryEvents() {
   });
 }
 
+function setActivePanel(panel) {
+  if (!["looks", "adjust", "fx"].includes(panel)) panel = "looks";
+  state.activePanel = panel;
+  if (el.shell) el.shell.dataset.activePanel = panel;
+  
+  const tabs = [
+    { btn: el.tabLooks, name: "looks" },
+    { btn: el.tabAdjust, name: "adjust" },
+    { btn: el.tabFx, name: "fx" }
+  ];
+  for (const t of tabs) {
+    if (t.btn) {
+      const isActive = t.name === panel;
+      t.btn.classList.toggle("is-active", isActive);
+      t.btn.setAttribute("aria-selected", isActive ? "true" : "false");
+    }
+  }
+
+  // Open corresponding accordion when switching to Adjust or FX
+  if (panel === "adjust" && el.accordionAdjust && !el.accordionAdjust.open) {
+    el.accordionAdjust.open = true;
+  }
+  if (panel === "fx" && el.accordionEffects && !el.accordionEffects.open) {
+    el.accordionEffects.open = true;
+  }
+}
+
+function setupEditorTabs() {
+  if (el.editorTabs) {
+    el.editorTabs.addEventListener("click", (e) => {
+      const tab = e.target.closest(".editor-tab");
+      if (!tab || !tab.dataset.panel) return;
+      setActivePanel(tab.dataset.panel);
+    });
+  }
+
+  if (el.mobileReplace) {
+    el.mobileReplace.onclick = choose;
+  }
+  if (el.mobileDownload) {
+    el.mobileDownload.onclick = downloadPhoto;
+  }
+}
+
+function setupHistory() {
+  if (el.btnUndo) el.btnUndo.onclick = undo;
+  if (el.btnRedo) el.btnRedo.onclick = redo;
+
+  window.addEventListener("keydown", (e) => {
+    // Only handle shortcuts when in active editor mode with an image loaded
+    if (!state.sourceImage || !el.shell?.classList.contains("is-editor-mode")) {
+      return;
+    }
+
+    // Do not intercept if focus is inside a text-editable element
+    const target = e.target;
+    const isTextInput = target && (
+      (target.tagName === "INPUT" && target.type !== "range" && target.type !== "button" && target.type !== "submit" && target.type !== "reset") ||
+      target.tagName === "TEXTAREA" ||
+      target.tagName === "SELECT" ||
+      target.isContentEditable
+    );
+    if (isTextInput) {
+      return;
+    }
+
+    // Phase 5.2: Comparison shortcut Backslash (\)
+    if (e.key === "\\") {
+      e.preventDefault();
+      if (state.compareMode === "original") {
+        setCompareMode(state.previousCompareMode || "edited");
+        state.previousCompareMode = null;
+      } else {
+        state.previousCompareMode = state.compareMode || "edited";
+        setCompareMode("original");
+      }
+      return;
+    }
+
+    // Phase 5.2: Split keyboard navigation when split is active and focus not on other inputs/buttons
+    if (state.isSplitActive && !e.target?.closest("#split-divider")) {
+      const activeTag = document.activeElement ? document.activeElement.tagName : "";
+      const isInputOrButton = activeTag === "INPUT" || activeTag === "BUTTON" || activeTag === "SELECT" || activeTag === "TEXTAREA";
+      if (!isInputOrButton && document.activeElement !== el.splitHandle) {
+        const step = e.shiftKey ? 10 : 5;
+        if (e.key === "ArrowLeft" || e.key === "ArrowDown") {
+          e.preventDefault();
+          state.splitPos = Math.max(0, state.splitPos - step);
+          updateSplitView();
+          return;
+        } else if (e.key === "ArrowRight" || e.key === "ArrowUp") {
+          e.preventDefault();
+          state.splitPos = Math.min(100, state.splitPos + step);
+          updateSplitView();
+          return;
+        } else if (e.key === "Home") {
+          e.preventDefault();
+          state.splitPos = 0;
+          updateSplitView();
+          return;
+        } else if (e.key === "End") {
+          e.preventDefault();
+          state.splitPos = 100;
+          updateSplitView();
+          return;
+        }
+      }
+    }
+
+    const isMac = typeof navigator !== "undefined" && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
+    const modifier = isMac ? e.metaKey : e.ctrlKey;
+
+    if (!modifier) return;
+
+    // Undo: Ctrl/Cmd + Z (without Shift)
+    if (e.key.toLowerCase() === "z" && !e.shiftKey) {
+      e.preventDefault();
+      undo();
+      return;
+    }
+
+    // Redo: Ctrl/Cmd + Shift + Z
+    if (e.key.toLowerCase() === "z" && e.shiftKey) {
+      e.preventDefault();
+      redo();
+      return;
+    }
+
+    // Redo: Ctrl/Cmd + Y
+    if (e.key.toLowerCase() === "y" && !e.shiftKey) {
+      e.preventDefault();
+      redo();
+      return;
+    }
+  });
+}
+
+function setupSearch() {
+  if (el.filmSearchInput) {
+    el.filmSearchInput.addEventListener("input", () => {
+      state.searchQuery = el.filmSearchInput.value;
+      if (el.filmSearchClear) {
+        el.filmSearchClear.hidden = !state.searchQuery.trim();
+      }
+      renderGrid();
+      renderRecentRow();
+    });
+
+    el.filmSearchInput.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && el.filmSearchInput.value) {
+        el.filmSearchInput.value = "";
+        state.searchQuery = "";
+        if (el.filmSearchClear) el.filmSearchClear.hidden = true;
+        renderGrid();
+        renderRecentRow();
+      }
+    });
+  }
+
+  if (el.filmSearchClear) {
+    el.filmSearchClear.addEventListener("click", () => {
+      state.searchQuery = "";
+      if (el.filmSearchInput) {
+        el.filmSearchInput.value = "";
+        el.filmSearchInput.focus();
+      }
+      el.filmSearchClear.hidden = true;
+      renderGrid();
+      renderRecentRow();
+    });
+  }
+
+  if (el.clearAllFilters) {
+    el.clearAllFilters.addEventListener("click", () => {
+      state.searchQuery = "";
+      state.selectedCategory = "ALL";
+      state.isMoreOpen = false;
+      if (el.filmSearchInput) el.filmSearchInput.value = "";
+      if (el.filmSearchClear) el.filmSearchClear.hidden = true;
+      renderTabs();
+      renderGrid();
+      renderRecentRow();
+    });
+  }
+
+  if (el.searchEmptyClearBtn) {
+    el.searchEmptyClearBtn.addEventListener("click", () => {
+      state.searchQuery = "";
+      state.selectedCategory = "ALL";
+      state.isMoreOpen = false;
+      if (el.filmSearchInput) el.filmSearchInput.value = "";
+      if (el.filmSearchClear) el.filmSearchClear.hidden = true;
+      renderTabs();
+      renderGrid();
+      renderRecentRow();
+    });
+  }
+}
+
+let customModalMode = "save";
+let customTargetId = null;
+let customDeleteTargetId = null;
+
+function saveCustomLook(name) {
+  const trimmed = (name || "").trim();
+  if (!trimmed) {
+    return { success: false, error: "Please enter a name for your custom look." };
+  }
+  if (trimmed.length > 50) {
+    return { success: false, error: "Name must be 50 characters or fewer." };
+  }
+  if (!state.sourceImage) {
+    return { success: false, error: "No photo loaded to save recipe from." };
+  }
+
+  const baseP = (state.activePreset && state.activePreset.source === "custom")
+    ? (presetLibrary.find(x => x.id === state.activePreset.basePresetId) || presetLibrary[0])
+    : (state.activePreset || presetLibrary[0]);
+
+  const id = `custom:${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  const now = Date.now();
+  const custom = {
+    ...baseP,
+    id,
+    name: trimmed,
+    source: "custom",
+    category: "CUSTOM",
+    basePresetId: baseP.id,
+    basePresetName: baseP.name,
+    adjustments: { ...state.adjustments },
+    effects: { ...state.effects },
+    createdAt: now,
+    updatedAt: now
+  };
+
+  customPresets.unshift(custom);
+  const saved = saveCustomPresetsToStorage();
+  if (!saved) {
+    customPresets.shift(); // rollback
+    return { success: false, error: "Storage quota exceeded. Could not save look." };
+  }
+
+  renderTabs();
+  renderGrid();
+  renderRecentRow();
+
+  return { success: true, preset: custom };
+}
+
+function renameCustomLook(id, newName) {
+  const trimmed = (newName || "").trim();
+  if (!trimmed) {
+    return { success: false, error: "Please enter a non-empty name." };
+  }
+  if (trimmed.length > 40) {
+    return { success: false, error: "Name must be 40 characters or fewer." };
+  }
+  const found = customPresets.find(p => p.id === id);
+  if (!found) return { success: false, error: "Custom look not found." };
+
+  found.name = trimmed;
+  found.updatedAt = Date.now();
+  saveCustomPresetsToStorage();
+
+  if (state.activePreset?.id === id) {
+    state.activePreset.name = trimmed;
+  }
+  updateLookDetail();
+  renderGrid();
+  renderRecentRow();
+  return { success: true };
+}
+
+function deleteCustomLook(id) {
+  const idx = customPresets.findIndex(p => p.id === id);
+  if (idx === -1) return false;
+
+  customPresets.splice(idx, 1);
+  saveCustomPresetsToStorage();
+
+  // Clean Favorites & Recently Used
+  if (state.favorites.has(id)) {
+    state.favorites.delete(id);
+    saveStorageList(STORAGE_KEYS.FAVORITES, Array.from(state.favorites));
+  }
+  if (state.recentIds.includes(id)) {
+    state.recentIds = state.recentIds.filter(x => x !== id);
+    saveStorageList(STORAGE_KEYS.RECENT, state.recentIds);
+  }
+
+  updateLookDetail();
+  renderTabs();
+  renderGrid();
+  renderRecentRow();
+  return true;
+}
+
+function openCustomLookModal(mode = "save", targetId = null, currentName = "") {
+  customModalMode = mode;
+  customTargetId = targetId;
+  if (!el.customLookDialog) return;
+
+  if (mode === "save") {
+    if (el.customDialogTitle) el.customDialogTitle.textContent = "Save Custom Look";
+    if (el.customDialogSubmit) el.customDialogSubmit.textContent = "Save Look";
+    const defaultName = state.activePreset ? `${state.activePreset.name} Custom` : "My Film Look";
+    if (el.customLookNameInput) el.customLookNameInput.value = defaultName;
+  } else {
+    if (el.customDialogTitle) el.customDialogTitle.textContent = "Rename Custom Look";
+    if (el.customDialogSubmit) el.customDialogSubmit.textContent = "Rename";
+    if (el.customLookNameInput) el.customLookNameInput.value = currentName || "";
+  }
+  if (el.customDialogError) {
+    el.customDialogError.textContent = "";
+    el.customDialogError.hidden = true;
+  }
+  el.customLookDialog.hidden = false;
+  setTimeout(() => {
+    if (el.customLookNameInput) {
+      el.customLookNameInput.focus();
+      el.customLookNameInput.select();
+    }
+  }, 50);
+}
+
+function closeCustomLookModal() {
+  if (el.customLookDialog) el.customLookDialog.hidden = true;
+  customTargetId = null;
+}
+
+function openCustomDeleteModal(id, name) {
+  customDeleteTargetId = id;
+  if (!el.customDeleteDialog) return;
+  const desc = el.customDeleteDialog.querySelector(".dialog-desc");
+  if (desc) desc.textContent = `Are you sure you want to delete “${name}”? This cannot be undone.`;
+  el.customDeleteDialog.hidden = false;
+}
+
+function closeCustomDeleteModal() {
+  if (el.customDeleteDialog) el.customDeleteDialog.hidden = true;
+  customDeleteTargetId = null;
+}
+
+function setupCustomPresets() {
+  if (el.saveLookBtn) {
+    el.saveLookBtn.onclick = () => {
+      if (!state.sourceImage) return;
+      openCustomLookModal("save");
+    };
+  }
+
+  if (el.detailRenameBtn) {
+    el.detailRenameBtn.onclick = () => {
+      if (state.activePreset && state.activePreset.source === "custom") {
+        openCustomLookModal("rename", state.activePreset.id, state.activePreset.name);
+      }
+    };
+  }
+
+  if (el.detailDeleteBtn) {
+    el.detailDeleteBtn.onclick = () => {
+      if (state.activePreset && state.activePreset.source === "custom") {
+        openCustomDeleteModal(state.activePreset.id, state.activePreset.name);
+      }
+    };
+  }
+
+  if (el.customLookForm) {
+    el.customLookForm.onsubmit = (e) => {
+      e.preventDefault();
+      const name = el.customLookNameInput ? el.customLookNameInput.value : "";
+      if (customModalMode === "save") {
+        const res = saveCustomLook(name);
+        if (res.success) {
+          closeCustomLookModal();
+        } else {
+          if (el.customDialogError) {
+            el.customDialogError.textContent = res.error;
+            el.customDialogError.hidden = false;
+          }
+        }
+      } else {
+        const res = renameCustomLook(customTargetId, name);
+        if (res.success) {
+          closeCustomLookModal();
+        } else {
+          if (el.customDialogError) {
+            el.customDialogError.textContent = res.error;
+            el.customDialogError.hidden = false;
+          }
+        }
+      }
+    };
+  }
+
+  if (el.customDialogClose) el.customDialogClose.onclick = closeCustomLookModal;
+  if (el.customDialogCancel) el.customDialogCancel.onclick = closeCustomLookModal;
+
+  if (el.customDeleteClose) el.customDeleteClose.onclick = closeCustomDeleteModal;
+  if (el.customDeleteCancel) el.customDeleteCancel.onclick = closeCustomDeleteModal;
+  if (el.customDeleteConfirm) {
+    el.customDeleteConfirm.onclick = () => {
+      if (customDeleteTargetId) {
+        deleteCustomLook(customDeleteTargetId);
+        closeCustomDeleteModal();
+      }
+    };
+  }
+
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      if (el.customLookDialog && !el.customLookDialog.hidden) {
+        closeCustomLookModal();
+      } else if (el.customDeleteDialog && !el.customDeleteDialog.hidden) {
+        closeCustomDeleteModal();
+      }
+    }
+  });
+}
+
 setupSplitInteractions();
 setupSliders();
 setupResetControls();
 setupCategoryEvents();
+setupEditorTabs();
+setupHistory();
+setupSearch();
+setupCustomPresets();
+setupFilmstripControls();
 
 if (typeof window !== "undefined") {
-
   window.__filmlab = {
     state,
     el,
     presetLibrary,
+    customPresets,
+    loadCustomPresets,
+    saveCustomPresetsToStorage,
+    saveCustomLook,
+    renameCustomLook,
+    deleteCustomLook,
+    getPresetById,
+    getAllPresets,
+    getPresetEffectiveParams,
+    openCustomLookModal,
+    closeCustomLookModal,
+    openCustomDeleteModal,
+    closeCustomDeleteModal,
     lookMoodTags,
     STORAGE_KEYS,
     loadStorageList,
@@ -1543,12 +3128,25 @@ if (typeof window !== "undefined") {
     draw,
     resetLook,
     resetAdjustments,
+    resetLightGroup,
+    resetColorGroup,
     resetEffects,
     resetAll,
     setCompareMode,
     updateSplitView,
+    handleSplitDrag,
+    startStageHold,
+    stopStageHold,
     queue,
     show,
+    ingestFiles,
+    workspace,
+    getActivePhoto,
+    setActivePhoto,
+    removePhoto,
+    renderFilmstrip,
+    setupFilmstripControls,
+    remove,
     downloadPhoto,
     selectPreset,
     toggleFavorite,
@@ -1556,7 +3154,27 @@ if (typeof window !== "undefined") {
     renderTabs,
     renderGrid,
     renderRecentRow,
-    updateLookDetail
+    updateLookDetail,
+    setActivePanel,
+    undo,
+    redo,
+    history,
+    getHistoryIndex: () => historyIndex,
+    createSnapshot,
+    restoreState,
+    clearHistory,
+    recordHistory,
+    matchPresetSearch,
+    getFilteredPresets,
+    updateDiscoveryMeta,
+    setSearchQuery: (q) => {
+      state.searchQuery = q || "";
+      if (el.filmSearchInput) el.filmSearchInput.value = state.searchQuery;
+      if (el.filmSearchClear) el.filmSearchClear.hidden = !state.searchQuery.trim();
+      renderGrid();
+      renderRecentRow();
+    }
   };
+  window.__FILM_LAB__ = window.__filmlab;
 }
 

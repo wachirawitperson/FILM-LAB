@@ -44,6 +44,16 @@
             <span class="file-dimensions" id="file-dimensions"></span>
           </div>
           <div class="header-buttons">
+            <div class="history-controls" id="history-controls" role="group" aria-label="Edit history">
+              <button class="button button-subtle history-btn" id="btn-undo" type="button" title="Undo last edit (Ctrl+Z)" aria-label="Undo last edit" disabled>
+                <span class="history-icon" aria-hidden="true">↶</span>
+                <span class="history-label">Undo</span>
+              </button>
+              <button class="button button-subtle history-btn" id="btn-redo" type="button" title="Redo last edit (Ctrl+Y)" aria-label="Redo last edit" disabled>
+                <span class="history-icon" aria-hidden="true">↷</span>
+                <span class="history-label">Redo</span>
+              </button>
+            </div>
             <button class="button button-subtle header-btn-change" id="header-replace-photo" type="button" title="Choose another photo">
               Change Photo
             </button>
@@ -106,7 +116,7 @@
 
               <!-- Floating Comparison Bar -->
               <div class="comparison-bar" id="comparison-bar" role="group" aria-label="Before and after comparison">
-                <button class="compare-btn" id="compare-original" type="button" title="View original photo">
+                <button class="compare-btn" id="compare-original" type="button" aria-pressed="false" title="View original photo">
                   <span class="compare-icon" aria-hidden="true">👁</span>
                   <span>Original</span>
                 </button>
@@ -114,7 +124,7 @@
                   <span class="compare-icon" aria-hidden="true">◧</span>
                   <span>Split</span>
                 </button>
-                <button class="compare-btn is-active" id="compare-edited" type="button" title="View graded film look">
+                <button class="compare-btn is-active" id="compare-edited" type="button" aria-pressed="true" title="View graded film look">
                   <span class="compare-icon" aria-hidden="true">✦</span>
                   <span>Edited</span>
                 </button>
@@ -123,6 +133,15 @@
 
             <div class="image-meta" id="image-meta" hidden></div>
             <div class="status-indicator" id="render-status" aria-live="polite" hidden>Ready</div>
+          </div>
+
+          <!-- Filmstrip Bar (Phase 6.3) -->
+          <div class="filmstrip-bar" id="filmstrip-bar" role="region" aria-label="Workspace photographs" hidden>
+            <div class="filmstrip-track" id="filmstrip-track" role="region" aria-label="Photographs strip"></div>
+            <button class="filmstrip-add-btn" id="filmstrip-add-btn" type="button" aria-label="Add photos to workspace" title="Add photos to workspace">
+              <span class="filmstrip-add-icon" aria-hidden="true">+</span>
+              <span class="filmstrip-add-label">Add</span>
+            </button>
           </div>
         </section>
 
@@ -139,6 +158,7 @@
               class="visually-hidden"
               type="file"
               accept="image/jpeg,image/png,image/webp"
+              multiple
             />
             <div class="drop-zone-content">
               <span class="drop-frame-mark" aria-hidden="true"></span>
@@ -157,6 +177,13 @@
         <!-- Studio Film Discovery & Secondary Controls (Editor Mode) -->
         <section class="studio-dock" id="studio-dock" aria-label="Film discovery and editing controls" hidden>
           
+          <!-- Mobile Segmented Tabs: Looks | Adjust | FX -->
+          <nav class="editor-tabs" id="editor-tabs" role="tablist" aria-label="Editor panels">
+            <button class="editor-tab is-active" id="tab-looks" role="tab" aria-selected="true" aria-controls="discovery-section" data-panel="looks" type="button">Looks</button>
+            <button class="editor-tab" id="tab-adjust" role="tab" aria-selected="false" aria-controls="accordion-adjust" data-panel="adjust" type="button">Adjust</button>
+            <button class="editor-tab" id="tab-fx" role="tab" aria-selected="false" aria-controls="accordion-effects" data-panel="fx" type="button">FX</button>
+          </nav>
+
           <!-- Primary Film Discovery Section -->
           <div class="discovery-section" id="discovery-section">
             <div class="discovery-header">
@@ -166,6 +193,10 @@
                 <h2 class="discovery-title">Find your film look</h2>
               </div>
               <div class="discovery-actions">
+                <button class="button button-subtle save-look-btn" id="save-look-btn" type="button" aria-label="Save current recipe as custom look" title="Save current recipe as custom look" disabled>
+                  <span class="save-look-icon" aria-hidden="true">＋</span>
+                  <span>Save Look</span>
+                </button>
                 <button class="button button-subtle surprise-btn" id="surprise-me-btn" type="button" aria-label="Surprise me with a random film look">
                   <span class="surprise-icon" aria-hidden="true">✨</span>
                   <span>Surprise me</span>
@@ -175,8 +206,39 @@
             </div>
 
 
+            <!-- Film Look Search Bar -->
+            <div class="look-search-bar" id="look-search-bar">
+              <div class="search-input-wrap">
+                <span class="search-icon" aria-hidden="true">🔍</span>
+                <input
+                  type="search"
+                  id="film-search-input"
+                  class="film-search-input"
+                  placeholder="Search film looks..."
+                  aria-label="Search film looks"
+                  autocomplete="off"
+                  spellcheck="false"
+                />
+                <button
+                  type="button"
+                  id="film-search-clear"
+                  class="film-search-clear"
+                  aria-label="Clear search"
+                  title="Clear search"
+                  hidden
+                >×</button>
+              </div>
+            </div>
+
             <!-- Mood Discovery Tabs -->
             <div class="mood-discovery-bar" id="category-tabs" role="tablist" aria-label="Film discovery moods"></div>
+
+            <!-- Discovery Meta & Active Filter Row -->
+            <div class="discovery-meta-row" id="discovery-meta-row">
+              <span class="discovery-count" id="discovery-count">69 looks</span>
+              <div class="discovery-filter-chips" id="discovery-filter-chips"></div>
+              <button type="button" class="clear-all-filters-btn" id="clear-all-filters" hidden>Clear filters</button>
+            </div>
 
             <!-- Selected Look Detail Card (Spotlight) -->
             <div class="look-detail-card" id="look-detail-card" hidden>
@@ -186,9 +248,15 @@
                   <span class="look-detail-divider" aria-hidden="true">·</span>
                   <span class="look-detail-badge" id="detail-preset-collection">1998 CAM</span>
                 </div>
-                <button class="detail-fav-btn" id="detail-fav-btn" type="button" aria-label="Add to favorites">
-                  <span class="detail-fav-icon" aria-hidden="true">♡</span>
-                </button>
+                <div class="look-detail-actions">
+                  <div class="custom-detail-actions" id="custom-detail-actions" hidden>
+                    <button class="button button-subtle detail-action-btn" id="detail-rename-btn" type="button" aria-label="Rename custom look" title="Rename custom look">Rename</button>
+                    <button class="button button-subtle button-danger detail-action-btn" id="detail-delete-btn" type="button" aria-label="Delete custom look" title="Delete custom look">Delete</button>
+                  </div>
+                  <button class="detail-fav-btn" id="detail-fav-btn" type="button" aria-label="Add to favorites">
+                    <span class="detail-fav-icon" aria-hidden="true">♡</span>
+                  </button>
+                </div>
               </div>
               <p class="look-detail-desc" id="detail-preset-desc">Nostalgic compact-camera golden daylight</p>
               <div class="look-detail-footer">
@@ -213,6 +281,17 @@
               <p class="fav-empty-title">Save the looks you love.</p>
               <p class="fav-empty-sub">Click the heart icon on any preset to quickly access your favorite film looks here.</p>
             </div>
+            <div class="search-empty-state" id="search-empty-state" hidden>
+              <span class="search-empty-icon" aria-hidden="true">🎞</span>
+              <p class="search-empty-title">No film looks found.</p>
+              <p class="search-empty-sub">Try another search or filter.</p>
+              <button type="button" class="button button-subtle search-empty-clear-btn" id="search-empty-clear-btn">Clear search</button>
+            </div>
+            <div class="custom-empty-state" id="custom-empty-state" hidden>
+              <span class="custom-empty-icon" aria-hidden="true">🏷</span>
+              <p class="custom-empty-title">No custom looks yet.</p>
+              <p class="custom-empty-sub">Save your current look to build your personal library.</p>
+            </div>
           </div>
 
           <!-- Secondary Progressive Disclosure: Fine Tune & Film Effects -->
@@ -228,85 +307,103 @@
                 <span class="accordion-arrow" aria-hidden="true">▾</span>
               </summary>
               <div class="accordion-content">
-                <div class="controls-list">
-                  <!-- Exposure -->
-                  <div class="control-row">
-                    <div class="control-header">
-                      <label for="adj-exposure" class="control-label">Exposure</label>
-                      <div class="control-value-group">
-                        <span class="control-value" id="val-exposure">0</span>
-                        <button class="control-reset-btn" id="reset-adj-exposure" type="button" aria-label="Reset Exposure" title="Reset Exposure" disabled>↺</button>
-                      </div>
-                    </div>
-                    <input type="range" class="slider-input" id="adj-exposure" min="-100" max="100" value="0" step="1" aria-label="Exposure (-100 to 100)" />
+                <!-- Group 1: LIGHT -->
+                <div class="adjustment-group" id="group-light">
+                  <div class="adjustment-group-header">
+                    <span class="adjustment-group-title">LIGHT</span>
+                    <button class="button button-text group-reset-btn" id="reset-group-light" type="button" disabled aria-label="Reset Light adjustments">Reset</button>
                   </div>
-                  <!-- Contrast -->
-                  <div class="control-row">
-                    <div class="control-header">
-                      <label for="adj-contrast" class="control-label">Contrast</label>
-                      <div class="control-value-group">
-                        <span class="control-value" id="val-contrast">0</span>
-                        <button class="control-reset-btn" id="reset-adj-contrast" type="button" aria-label="Reset Contrast" title="Reset Contrast" disabled>↺</button>
+                  <div class="controls-list">
+                    <!-- Exposure -->
+                    <div class="control-row">
+                      <div class="control-header">
+                        <label for="adj-exposure" class="control-label">Exposure</label>
+                        <div class="control-value-group">
+                          <span class="control-value" id="val-exposure">0</span>
+                          <button class="control-reset-btn" id="reset-adj-exposure" type="button" aria-label="Reset Exposure" title="Reset Exposure" disabled>↺</button>
+                        </div>
                       </div>
+                      <input type="range" class="slider-input" id="adj-exposure" min="-100" max="100" value="0" step="1" aria-label="Exposure (-100 to 100)" />
                     </div>
-                    <input type="range" class="slider-input" id="adj-contrast" min="-100" max="100" value="0" step="1" aria-label="Contrast (-100 to 100)" />
-                  </div>
-                  <!-- Highlights -->
-                  <div class="control-row">
-                    <div class="control-header">
-                      <label for="adj-highlights" class="control-label">Highlights</label>
-                      <div class="control-value-group">
-                        <span class="control-value" id="val-highlights">0</span>
-                        <button class="control-reset-btn" id="reset-adj-highlights" type="button" aria-label="Reset Highlights" title="Reset Highlights" disabled>↺</button>
+                    <!-- Contrast -->
+                    <div class="control-row">
+                      <div class="control-header">
+                        <label for="adj-contrast" class="control-label">Contrast</label>
+                        <div class="control-value-group">
+                          <span class="control-value" id="val-contrast">0</span>
+                          <button class="control-reset-btn" id="reset-adj-contrast" type="button" aria-label="Reset Contrast" title="Reset Contrast" disabled>↺</button>
+                        </div>
                       </div>
+                      <input type="range" class="slider-input" id="adj-contrast" min="-100" max="100" value="0" step="1" aria-label="Contrast (-100 to 100)" />
                     </div>
-                    <input type="range" class="slider-input" id="adj-highlights" min="-100" max="100" value="0" step="1" aria-label="Highlights (-100 to 100)" />
-                  </div>
-                  <!-- Shadows -->
-                  <div class="control-row">
-                    <div class="control-header">
-                      <label for="adj-shadows" class="control-label">Shadows</label>
-                      <div class="control-value-group">
-                        <span class="control-value" id="val-shadows">0</span>
-                        <button class="control-reset-btn" id="reset-adj-shadows" type="button" aria-label="Reset Shadows" title="Reset Shadows" disabled>↺</button>
+                    <!-- Highlights -->
+                    <div class="control-row">
+                      <div class="control-header">
+                        <label for="adj-highlights" class="control-label">Highlights</label>
+                        <div class="control-value-group">
+                          <span class="control-value" id="val-highlights">0</span>
+                          <button class="control-reset-btn" id="reset-adj-highlights" type="button" aria-label="Reset Highlights" title="Reset Highlights" disabled>↺</button>
+                        </div>
                       </div>
+                      <input type="range" class="slider-input" id="adj-highlights" min="-100" max="100" value="0" step="1" aria-label="Highlights (-100 to 100)" />
                     </div>
-                    <input type="range" class="slider-input" id="adj-shadows" min="-100" max="100" value="0" step="1" aria-label="Shadows (-100 to 100)" />
-                  </div>
-                  <!-- Temperature -->
-                  <div class="control-row">
-                    <div class="control-header">
-                      <label for="adj-temperature" class="control-label">Temperature</label>
-                      <div class="control-value-group">
-                        <span class="control-value" id="val-temperature">0</span>
-                        <button class="control-reset-btn" id="reset-adj-temperature" type="button" aria-label="Reset Temperature" title="Reset Temperature" disabled>↺</button>
+                    <!-- Shadows -->
+                    <div class="control-row">
+                      <div class="control-header">
+                        <label for="adj-shadows" class="control-label">Shadows</label>
+                        <div class="control-value-group">
+                          <span class="control-value" id="val-shadows">0</span>
+                          <button class="control-reset-btn" id="reset-adj-shadows" type="button" aria-label="Reset Shadows" title="Reset Shadows" disabled>↺</button>
+                        </div>
                       </div>
+                      <input type="range" class="slider-input" id="adj-shadows" min="-100" max="100" value="0" step="1" aria-label="Shadows (-100 to 100)" />
                     </div>
-                    <input type="range" class="slider-input" id="adj-temperature" min="-100" max="100" value="0" step="1" aria-label="Temperature (-100 to 100)" />
-                  </div>
-                  <!-- Tint -->
-                  <div class="control-row">
-                    <div class="control-header">
-                      <label for="adj-tint" class="control-label">Tint</label>
-                      <div class="control-value-group">
-                        <span class="control-value" id="val-tint">0</span>
-                        <button class="control-reset-btn" id="reset-adj-tint" type="button" aria-label="Reset Tint" title="Reset Tint" disabled>↺</button>
-                      </div>
-                    </div>
-                    <input type="range" class="slider-input" id="adj-tint" min="-100" max="100" value="0" step="1" aria-label="Tint (-100 to 100)" />
-                  </div>
-                  <!-- Saturation -->
-                  <div class="control-row">
-                    <div class="control-header">
-                      <label for="adj-saturation" class="control-label">Saturation</label>
-                      <div class="control-value-group">
-                        <span class="control-value" id="val-saturation">0</span>
-                        <button class="control-reset-btn" id="reset-adj-saturation" type="button" aria-label="Reset Saturation" title="Reset Saturation" disabled>↺</button>
-                      </div>
-                    </div>
-                    <input type="range" class="slider-input" id="adj-saturation" min="-100" max="100" value="0" step="1" aria-label="Saturation (-100 to 100)" />
                   </div>
                 </div>
+
+                <!-- Group 2: COLOR -->
+                <div class="adjustment-group" id="group-color">
+                  <div class="adjustment-group-header">
+                    <span class="adjustment-group-title">COLOR</span>
+                    <button class="button button-text group-reset-btn" id="reset-group-color" type="button" disabled aria-label="Reset Color adjustments">Reset</button>
+                  </div>
+                  <div class="controls-list">
+                    <!-- Temperature -->
+                    <div class="control-row">
+                      <div class="control-header">
+                        <label for="adj-temperature" class="control-label">Temperature</label>
+                        <div class="control-value-group">
+                          <span class="control-value" id="val-temperature">0</span>
+                          <button class="control-reset-btn" id="reset-adj-temperature" type="button" aria-label="Reset Temperature" title="Reset Temperature" disabled>↺</button>
+                        </div>
+                      </div>
+                      <input type="range" class="slider-input" id="adj-temperature" min="-100" max="100" value="0" step="1" aria-label="Temperature (-100 to 100)" />
+                    </div>
+                    <!-- Tint -->
+                    <div class="control-row">
+                      <div class="control-header">
+                        <label for="adj-tint" class="control-label">Tint</label>
+                        <div class="control-value-group">
+                          <span class="control-value" id="val-tint">0</span>
+                          <button class="control-reset-btn" id="reset-adj-tint" type="button" aria-label="Reset Tint" title="Reset Tint" disabled>↺</button>
+                        </div>
+                      </div>
+                      <input type="range" class="slider-input" id="adj-tint" min="-100" max="100" value="0" step="1" aria-label="Tint (-100 to 100)" />
+                    </div>
+                    <!-- Saturation -->
+                    <div class="control-row">
+                      <div class="control-header">
+                        <label for="adj-saturation" class="control-label">Saturation</label>
+                        <div class="control-value-group">
+                          <span class="control-value" id="val-saturation">0</span>
+                          <button class="control-reset-btn" id="reset-adj-saturation" type="button" aria-label="Reset Saturation" title="Reset Saturation" disabled>↺</button>
+                        </div>
+                      </div>
+                      <input type="range" class="slider-input" id="adj-saturation" min="-100" max="100" value="0" step="1" aria-label="Saturation (-100 to 100)" />
+                    </div>
+                  </div>
+                </div>
+
                 <div class="accordion-footer">
                   <button class="button button-text panel-reset-link" id="reset-adjustments-link" type="button">Reset Adjustments</button>
                 </div>
@@ -425,6 +522,17 @@
 
           </div>
         </section>
+        
+        <!-- Mobile Bottom Action Bar (Active in Editor Mode) -->
+        <div class="mobile-action-bar" id="mobile-action-bar" hidden>
+          <button class="button button-subtle mobile-change-btn" id="mobile-replace-photo" type="button" title="Choose another photo">
+            Change Photo
+          </button>
+          <button class="button button-primary mobile-download-btn" id="mobile-download-photo" type="button" title="Download film graded photograph">
+            <span class="download-icon" aria-hidden="true">↓</span>
+            <span id="mobile-download-btn-text">Download</span>
+          </button>
+        </div>
       </div>
 
       <!-- Studio Footer -->
@@ -443,6 +551,49 @@
           </div>
         </div>
       </footer>
+
+      <!-- Custom Look Modal Dialog (Save / Rename) -->
+      <div class="custom-look-dialog-backdrop" id="custom-look-dialog" hidden role="dialog" aria-modal="true" aria-labelledby="custom-dialog-title">
+        <div class="custom-look-dialog-card">
+          <div class="dialog-header">
+            <h3 class="dialog-title" id="custom-dialog-title">Save Custom Look</h3>
+            <button type="button" class="dialog-close-btn" id="custom-dialog-close" aria-label="Close dialog">✕</button>
+          </div>
+          <form class="dialog-form" id="custom-look-form" onsubmit="return false;">
+            <label for="custom-look-name-input" class="dialog-label">Look Name</label>
+            <input
+              type="text"
+              id="custom-look-name-input"
+              class="dialog-input"
+              placeholder="e.g. Warm Gold Portrait"
+              maxlength="40"
+              autocomplete="off"
+              spellcheck="false"
+              required
+            />
+            <p class="dialog-error" id="custom-dialog-error" hidden></p>
+            <div class="dialog-actions">
+              <button type="button" class="button button-subtle dialog-cancel-btn" id="custom-dialog-cancel">Cancel</button>
+              <button type="submit" class="button button-primary dialog-save-btn" id="custom-dialog-submit">Save Look</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Custom Look Delete Confirmation Dialog -->
+      <div class="custom-look-dialog-backdrop" id="custom-delete-dialog" hidden role="dialog" aria-modal="true" aria-labelledby="custom-delete-title">
+        <div class="custom-look-dialog-card">
+          <div class="dialog-header">
+            <h3 class="dialog-title" id="custom-delete-title">Delete Custom Look?</h3>
+            <button type="button" class="dialog-close-btn" id="custom-delete-close" aria-label="Close dialog">✕</button>
+          </div>
+          <p class="dialog-desc" id="custom-delete-desc">Are you sure you want to delete this custom look? This cannot be undone.</p>
+          <div class="dialog-actions">
+            <button type="button" class="button button-subtle" id="custom-delete-cancel">Cancel</button>
+            <button type="button" class="button button-primary button-danger" id="custom-delete-confirm">Delete</button>
+          </div>
+        </div>
+      </div>
     </main>
 
     <script type="module" src="src/app.js"></script>
