@@ -156,6 +156,45 @@
             <button class="editor-tab" id="tab-adjust" role="tab" aria-selected="false" aria-controls="accordion-adjust" data-panel="adjust" type="button">Adjust</button>
             <button class="editor-tab" id="tab-fx" role="tab" aria-selected="false" aria-controls="accordion-effects" data-panel="fx" type="button">FX</button>
           </nav>
+        </section>
+
+        <!-- Initial Upload Panel (Empty State) -->
+        <section class="upload-panel" id="upload-panel" aria-labelledby="upload-heading">
+          <div class="upload-heading">
+            <p class="eyebrow">STEP 01</p>
+            <h2 id="upload-heading">Set your frame</h2>
+          </div>
+
+          <div class="drop-zone" id="drop-zone">
+            <input
+              id="photo-input"
+              class="visually-hidden"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+            />
+            <div class="drop-zone-content">
+              <span class="drop-frame-mark" aria-hidden="true"></span>
+              <p class="drop-zone-title">Select Photograph</p>
+              <p class="drop-zone-copy">JPEG, PNG, or WebP (up to 30 MB)</p>
+              <button class="button button-primary" id="select-photo" type="button">
+                Upload photo
+              </button>
+              <p class="drop-zone-hint">or drop a file anywhere</p>
+            </div>
+          </div>
+
+          <p class="upload-error" id="upload-error" role="alert" hidden></p>
+        </section>
+
+        <!-- Studio Film Discovery & Secondary Controls (Editor Mode) -->
+        <section class="studio-dock" id="studio-dock" aria-label="Film discovery and editing controls" hidden>
+          <!-- Desktop Studio Modes (Desktop >= 1100px) -->
+          <nav class="studio-modes" id="studio-modes" role="tablist" aria-label="Studio editing modes">
+            <button class="studio-mode-btn is-active" id="mode-presets" role="tab" aria-selected="true" data-mode="presets" type="button">PRESETS</button>
+            <button class="studio-mode-btn" id="mode-adjust" role="tab" aria-selected="false" data-mode="adjust" type="button">ADJUST</button>
+            <button class="studio-mode-btn" id="mode-effects" role="tab" aria-selected="false" data-mode="effects" type="button">EFFECTS</button>
+          </nav>
 
           <!-- Primary Film Discovery Section (Film Index · 69 Looks) -->
           <div class="discovery-section" id="discovery-section">
@@ -177,7 +216,6 @@
                 <button class="button button-text reset-look-link" id="reset-look" type="button" disabled>Reset Look</button>
               </div>
             </div>
-
 
             <!-- Film Look Search Bar -->
             <div class="look-search-bar" id="look-search-bar">
@@ -238,7 +276,6 @@
               </div>
             </div>
 
-
             <!-- Recently Used Row (Visible when recent looks exist) -->
             <div class="recent-looks-section" id="recent-looks-section" hidden>
               <div class="recent-looks-header">
@@ -264,86 +301,6 @@
               <span class="custom-empty-icon" aria-hidden="true">🏷</span>
               <p class="custom-empty-title">No custom looks yet.</p>
               <p class="custom-empty-sub">Save your current look to build your personal library.</p>
-            </div>
-          </div>
-        </section>
-
-        <!-- Initial Upload Panel (Empty State) -->
-        <section class="upload-panel" id="upload-panel" aria-labelledby="upload-heading">
-          <div class="upload-heading">
-            <p class="eyebrow">STEP 01</p>
-            <h2 id="upload-heading">Set your frame</h2>
-          </div>
-
-          <div class="drop-zone" id="drop-zone">
-            <input
-              id="photo-input"
-              class="visually-hidden"
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              multiple
-            />
-            <div class="drop-zone-content">
-              <span class="drop-frame-mark" aria-hidden="true"></span>
-              <p class="drop-zone-title">Select Photograph</p>
-              <p class="drop-zone-copy">JPEG, PNG, or WebP (up to 30 MB)</p>
-              <button class="button button-primary" id="select-photo" type="button">
-                Upload photo
-              </button>
-              <p class="drop-zone-hint">or drop a file anywhere</p>
-            </div>
-          </div>
-
-          <p class="upload-error" id="upload-error" role="alert" hidden></p>
-        </section>
-
-        <!-- Studio Film Discovery & Secondary Controls (Editor Mode) -->
-        <section class="studio-dock" id="studio-dock" aria-label="Film discovery and editing controls" hidden>
-          <!-- Desktop Studio Modes (Desktop >= 1100px) -->
-          <nav class="studio-modes" id="studio-modes" role="tablist" aria-label="Studio editing modes">
-            <button class="studio-mode-btn is-active" id="mode-presets" role="tab" aria-selected="true" data-mode="presets" type="button">PRESETS</button>
-            <button class="studio-mode-btn" id="mode-adjust" role="tab" aria-selected="false" data-mode="adjust" type="button">ADJUST</button>
-            <button class="studio-mode-btn" id="mode-effects" role="tab" aria-selected="false" data-mode="effects" type="button">EFFECTS</button>
-          </nav>
-
-          <!-- Studio Mode 1: Compact Presets Inspector & Quick Browser -->
-          <div class="studio-mode-panel" id="studio-mode-presets">
-            <div class="studio-look-card" id="studio-look-card">
-              <div class="studio-look-header">
-                <div class="studio-look-title-wrap">
-                  <span class="studio-look-badge" id="studio-preset-badge">CLASSIC</span>
-                  <h3 class="studio-look-name" id="studio-preset-name">Golden 200</h3>
-                </div>
-                <button type="button" class="detail-fav-btn" id="studio-fav-btn" aria-label="Toggle favorite">
-                  <span class="detail-fav-icon" aria-hidden="true">♡</span>
-                </button>
-              </div>
-              <p class="studio-look-desc" id="studio-preset-desc">Warm consumer color negative with nostalgic golden highlights.</p>
-              <div class="studio-look-meta">
-                <span class="studio-look-bestfor" id="studio-preset-bestfor">Best for: Daylight · Golden Hour</span>
-              </div>
-              <div class="studio-look-actions">
-                <button type="button" class="button button-subtle studio-action-btn" id="studio-save-look-btn" title="Save current recipe as custom look">
-                  <span class="save-look-icon" aria-hidden="true">＋</span>
-                  <span>Save Look</span>
-                </button>
-                <button type="button" class="button button-subtle studio-action-btn" id="studio-surprise-btn" title="Surprise me with a random film look">
-                  <span class="surprise-icon" aria-hidden="true">✨</span>
-                  <span>Surprise</span>
-                </button>
-                <button type="button" class="button button-text studio-action-btn" id="studio-reset-look" title="Reset look to default">
-                  Reset Look
-                </button>
-              </div>
-            </div>
-
-            <!-- Compact Quick Looks Switcher -->
-            <div class="studio-quick-looks">
-              <div class="studio-quick-header">
-                <span class="panel-eyebrow">QUICK PRESETS</span>
-                <span class="studio-quick-count" id="studio-quick-count">56 looks</span>
-              </div>
-              <div class="studio-compact-grid" id="studio-compact-grid" role="listbox" aria-label="Quick film presets"></div>
             </div>
           </div>
 

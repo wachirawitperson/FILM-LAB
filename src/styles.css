@@ -2422,20 +2422,16 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     display: flex;
   }
 
-  .editor-shell.is-editor-mode:not([data-active-panel]) .studio-dock,
-  .editor-shell.is-editor-mode[data-active-panel="looks"] .studio-dock {
-    display: none;
-  }
-
-  .editor-shell.is-editor-mode[data-active-panel="adjust"] .studio-dock,
-  .editor-shell.is-editor-mode[data-active-panel="fx"] .studio-dock {
-    display: block;
+  .editor-shell.is-editor-mode .studio-dock {
+    display: block !important;
     border: none;
     padding: 0;
+    background: transparent;
+    max-height: none;
+    overflow-y: visible;
   }
 
-  .studio-modes,
-  .studio-mode-panel {
+  .studio-modes {
     display: none !important;
   }
 
@@ -2650,29 +2646,19 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     display: flex;
   }
 
-  .editor-shell.is-editor-mode:not([data-active-panel]) .studio-dock,
-  .editor-shell.is-editor-mode[data-active-panel="looks"] .studio-dock {
-    display: none;
-  }
-
-  .editor-shell.is-editor-mode[data-active-panel="adjust"] .studio-dock,
-  .editor-shell.is-editor-mode[data-active-panel="fx"] .studio-dock {
-    display: block;
-    border: none;
-    padding: 0;
-  }
-
-  .studio-modes,
-  .studio-mode-panel {
+  .studio-modes {
     display: none !important;
   }
 
   .editor-shell.is-editor-mode .studio-dock {
     grid-column: 1;
+    display: block !important;
+    border: none;
     border-left: 0;
     max-height: none;
     overflow-y: visible;
-    padding-left: 0;
+    padding: 0;
+    background: transparent;
   }
 
   .editor-shell.is-editor-mode .preset-grid {
@@ -2740,21 +2726,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     display: none !important;
   }
 
-  /* Film Index in Left Column directly below Filmstrip */
-  .editor-shell.is-editor-mode .discovery-section {
-    display: flex !important;
-    flex-direction: column;
-    gap: 16px;
-    border-top: 1px solid var(--line);
-    padding-top: 24px;
-    min-width: 0;
-  }
-
-  .editor-shell.is-editor-mode .preset-grid {
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 14px;
-  }
-
   /* Tool Accordions inside Studio Dock on desktop are styled as clean panels */
   .studio-dock .tool-accordion {
     border: none;
@@ -2772,18 +2743,20 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     gap: 14px;
   }
 
-  /* Studio Dock Mode switching on Desktop */
-  .studio-dock:not([data-studio-mode]) #studio-mode-presets,
-  .studio-dock[data-studio-mode="presets"] #studio-mode-presets {
+  /* Studio Dock Mode switching on Desktop (Discovery Section IS the Presets mode) */
+  .studio-dock:not([data-studio-mode]) #discovery-section,
+  .studio-dock[data-studio-mode="presets"] #discovery-section {
     display: flex !important;
+    flex-direction: column;
+    gap: 14px;
   }
   .studio-dock:not([data-studio-mode]) .secondary-tools-section,
   .studio-dock[data-studio-mode="presets"] .secondary-tools-section {
     display: none !important;
   }
 
-  .studio-dock[data-studio-mode="adjust"] #studio-mode-presets,
-  .studio-dock[data-studio-mode="effects"] #studio-mode-presets {
+  .studio-dock[data-studio-mode="adjust"] #discovery-section,
+  .studio-dock[data-studio-mode="effects"] #discovery-section {
     display: none !important;
   }
 
@@ -2808,6 +2781,53 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   }
   .studio-dock[data-studio-mode="effects"] #accordion-effects {
     display: block !important;
+  }
+
+  /* Compact 2-column visual preset cards in Studio Sidebar */
+  .studio-dock .preset-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .studio-dock .preset-card {
+    padding: 8px !important;
+    gap: 6px !important;
+  }
+
+  .studio-dock .preset-thumb-wrap {
+    aspect-ratio: 4 / 3 !important;
+    border-radius: 4px !important;
+  }
+
+  .studio-dock .preset-card strong {
+    font-size: 0.8rem !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .studio-dock .preset-card small {
+    font-size: 0.68rem !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .studio-dock .discovery-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+  }
+
+  .studio-dock .discovery-actions {
+    width: 100% !important;
+    justify-content: flex-start !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+
+  .studio-dock .look-detail-card {
+    padding: 12px !important;
   }
 
   /* Empty state Desktop layout */
