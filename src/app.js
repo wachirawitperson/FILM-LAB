@@ -571,7 +571,24 @@ const el = {
   filmstripBar: $("filmstrip-bar"),
   filmstripTrack: $("filmstrip-track"),
   filmstripAddBtn: $("filmstrip-add-btn"),
-  filmstripClearBtn: $("filmstrip-clear-btn")
+  filmstripClearBtn: $("filmstrip-clear-btn"),
+
+  studioModes: $("studio-modes"),
+  modePresets: $("mode-presets"),
+  modeAdjust: $("mode-adjust"),
+  modeEffects: $("mode-effects"),
+  studioModePresets: $("studio-mode-presets"),
+  studioLookCard: $("studio-look-card"),
+  studioPresetName: $("studio-preset-name"),
+  studioPresetBadge: $("studio-preset-badge"),
+  studioPresetDesc: $("studio-preset-desc"),
+  studioPresetBestFor: $("studio-preset-bestfor"),
+  studioFavBtn: $("studio-fav-btn"),
+  studioSaveLookBtn: $("studio-save-look-btn"),
+  studioSurpriseBtn: $("studio-surprise-btn"),
+  studioResetLook: $("studio-reset-look"),
+  studioQuickCount: $("studio-quick-count"),
+  studioCompactGrid: $("studio-compact-grid")
 };
 
 /* ==================================================
@@ -672,6 +689,7 @@ function setActivePhoto(id) {
     if (el.previewStage) el.previewStage.classList.add("has-image");
     if (el.mobileActionBar) el.mobileActionBar.hidden = false;
     if (el.saveLookBtn) el.saveLookBtn.disabled = false;
+    if (el.studioSaveLookBtn) el.studioSaveLookBtn.disabled = false;
   }
 
   // 4. Bind source image & metadata
@@ -1692,6 +1710,7 @@ function updateLookDetail() {
   const p = state.activePreset;
   if (!p || !state.sourceImage) {
     if (el.lookDetailCard) el.lookDetailCard.hidden = true;
+    if (el.studioLookCard) el.studioLookCard.hidden = true;
     return;
   }
   if (el.lookDetailCard) el.lookDetailCard.hidden = false;
@@ -1763,6 +1782,50 @@ function updateLookDetail() {
     if (icon) icon.textContent = isFav ? "♥" : "♡";
     el.detailFavBtn.setAttribute("aria-label", isFav ? `Remove ${p.name} from favorites` : `Add ${p.name} to favorites`);
     el.detailFavBtn.onclick = () => toggleFavorite(p.id);
+  }
+
+  // Update Desktop Studio Look Card
+  if (el.studioLookCard) {
+    el.studioLookCard.hidden = false;
+    if (el.studioPresetName) el.studioPresetName.textContent = p.name;
+    if (el.studioPresetBadge) {
+      if (p.source === "custom") {
+        el.studioPresetBadge.textContent = "CUSTOM";
+      } else if (p.category === "KODAK_FILM" || p.collection === "Kodak Film") {
+        el.studioPresetBadge.textContent = "KODAK FILM";
+      } else {
+        el.studioPresetBadge.textContent = (cats.find(a => a[0] === p.category)?.[1] || p.collection || p.category || "LOOK").toUpperCase();
+      }
+    }
+    if (el.studioPresetDesc) {
+      if (p.source === "custom") {
+        el.studioPresetDesc.textContent = p.basePresetName ? `Based on ${p.basePresetName}` : "Custom Film Recipe";
+      } else {
+        el.studioPresetDesc.textContent = p.description || p.character || "Authentic film look";
+      }
+    }
+    if (el.studioPresetBestFor) {
+      if (p.source === "custom") {
+        const d = p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "Custom";
+        el.studioPresetBestFor.textContent = `Custom Recipe · Saved ${d}`;
+      } else {
+        const bestForStr = p.recommendedFor && p.recommendedFor.length > 0
+          ? `Best for: ${p.recommendedFor.map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(" · ")}`
+          : "Best for: Daylight · Everyday";
+        el.studioPresetBestFor.textContent = bestForStr;
+      }
+    }
+    if (el.studioFavBtn) {
+      const isFav = state.favorites.has(p.id);
+      el.studioFavBtn.classList.toggle("is-fav", isFav);
+      const icon = el.studioFavBtn.querySelector(".detail-fav-icon");
+      if (icon) icon.textContent = isFav ? "♥" : "♡";
+      el.studioFavBtn.setAttribute("aria-label", isFav ? `Remove ${p.name} from favorites` : `Add ${p.name} to favorites`);
+      el.studioFavBtn.onclick = () => toggleFavorite(p.id);
+    }
+    if (el.studioResetLook) {
+      el.studioResetLook.disabled = !state.activePreset;
+    }
   }
 }
 
@@ -2057,6 +2120,23 @@ function renderTabs() {
   container.appendChild(moreWrap);
 
   el.tabs.replaceChildren(container);
+
+  if (state.isMoreOpen) {
+    requestAnimationFrame(() => {
+      if (!dropdown.isConnected) return;
+      const rect = dropdown.getBoundingClientRect();
+      const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+      if (rect.right > viewportWidth - 12) {
+        const overflowX = rect.right - (viewportWidth - 12);
+        dropdown.style.transform = `translateX(-${overflowX}px)`;
+      } else if (rect.left < 12) {
+        const underflowX = 12 - rect.left;
+        dropdown.style.transform = `translateX(${underflowX}px)`;
+      } else {
+        dropdown.style.transform = "none";
+      }
+    });
+  }
 }
 
 
@@ -2170,6 +2250,37 @@ function renderGrid() {
   }));
 
   updateDiscoveryMeta(list.length, presetLibrary.length + customPresets.length);
+  renderStudioPresets();
+}
+
+function renderStudioPresets() {
+  if (!el.studioCompactGrid) return;
+  const presets = getAllPresets();
+  if (el.studioQuickCount) {
+    el.studioQuickCount.textContent = `${presets.length} looks`;
+  }
+
+  el.studioCompactGrid.replaceChildren(...presets.map(p => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    const isActive = state.activePreset?.id === p.id;
+    btn.className = `compact-preset-card${isActive ? " is-active" : ""}${p.source === "custom" ? " is-custom" : ""}`;
+    btn.setAttribute("role", "option");
+    btn.setAttribute("aria-selected", String(isActive));
+    btn.setAttribute("aria-label", p.name);
+
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "compact-preset-name";
+    nameSpan.textContent = p.name;
+
+    const catSpan = document.createElement("span");
+    catSpan.className = "compact-preset-cat";
+    catSpan.textContent = p.source === "custom" ? "Custom" : (p.category === "KODAK_FILM" ? "Kodak" : (p.category || "Look"));
+
+    btn.append(nameSpan, catSpan);
+    btn.onclick = () => selectPreset(p);
+    return btn;
+  }));
 }
 
 function updateResetBtnStates() {
@@ -2514,6 +2625,7 @@ function enterEditorMode(file) {
   if (el.resetLookLink) el.resetLookLink.disabled = false;
   if (el.btnResetLook) el.btnResetLook.disabled = false;
   if (el.saveLookBtn) el.saveLookBtn.disabled = false;
+  if (el.studioSaveLookBtn) el.studioSaveLookBtn.disabled = false;
 
   renderTabs();
   renderRecentRow();
@@ -2528,6 +2640,8 @@ function enterEditorMode(file) {
   setCompareMode("edited");
   if (el.mobileActionBar) el.mobileActionBar.hidden = false;
   setActivePanel("looks");
+  setStudioMode("presets");
+  renderStudioPresets();
   queue();
   renderFilmstrip();
 
@@ -2573,12 +2687,15 @@ function remove() {
   if (el.stageToolbar) el.stageToolbar.hidden = true;
   el.stageViewport.hidden = true;
   el.studioDock.hidden = true;
+  if (el.studioDock) delete el.studioDock.dataset.studioMode;
   el.imageMeta.hidden = true;
   el.previewStage.classList.remove("has-image");
   if (el.lookDetailCard) el.lookDetailCard.hidden = true;
+  if (el.studioLookCard) el.studioLookCard.hidden = true;
   if (el.recentSection) el.recentSection.hidden = true;
   if (el.mobileActionBar) el.mobileActionBar.hidden = true;
   if (el.saveLookBtn) el.saveLookBtn.disabled = true;
+  if (el.studioSaveLookBtn) el.studioSaveLookBtn.disabled = true;
   if (el.shell) delete el.shell.dataset.activePanel;
   setActivePanel("looks");
   clear();
@@ -2738,6 +2855,10 @@ function setActivePanel(panel) {
     }
   }
 
+  // Sync studio mode on desktop
+  const targetStudioMode = panel === "adjust" ? "adjust" : (panel === "fx" ? "effects" : "presets");
+  setStudioMode(targetStudioMode);
+
   // Open corresponding accordion when switching to Adjust or FX
   if (panel === "adjust" && el.accordionAdjust && !el.accordionAdjust.open) {
     el.accordionAdjust.open = true;
@@ -2761,6 +2882,56 @@ function setupEditorTabs() {
   }
   if (el.mobileDownload) {
     el.mobileDownload.onclick = downloadPhoto;
+  }
+}
+
+function setStudioMode(mode) {
+  if (!["presets", "adjust", "effects"].includes(mode)) mode = "presets";
+  state.studioMode = mode;
+  if (el.studioDock) el.studioDock.dataset.studioMode = mode;
+
+  const modeBtns = [
+    { btn: el.modePresets, mode: "presets" },
+    { btn: el.modeAdjust, mode: "adjust" },
+    { btn: el.modeEffects, mode: "effects" }
+  ];
+
+  for (const mb of modeBtns) {
+    if (mb.btn) {
+      const isActive = mb.mode === mode;
+      mb.btn.classList.toggle("is-active", isActive);
+      mb.btn.setAttribute("aria-selected", isActive ? "true" : "false");
+    }
+  }
+
+  if (mode === "adjust" && el.accordionAdjust && !el.accordionAdjust.open) {
+    el.accordionAdjust.open = true;
+  }
+  if (mode === "effects" && el.accordionEffects && !el.accordionEffects.open) {
+    el.accordionEffects.open = true;
+  }
+}
+
+function setupStudioModes() {
+  if (el.studioModes) {
+    el.studioModes.addEventListener("click", (e) => {
+      const btn = e.target.closest(".studio-mode-btn");
+      if (!btn || !btn.dataset.mode) return;
+      setStudioMode(btn.dataset.mode);
+    });
+  }
+
+  if (el.studioSaveLookBtn) {
+    el.studioSaveLookBtn.onclick = () => {
+      if (!state.sourceImage) return;
+      openCustomLookModal("save");
+    };
+  }
+  if (el.studioSurpriseBtn) {
+    el.studioSurpriseBtn.onclick = surpriseMe;
+  }
+  if (el.studioResetLook) {
+    el.studioResetLook.onclick = resetLook;
   }
 }
 
@@ -3145,6 +3316,7 @@ setupSliders();
 setupResetControls();
 setupCategoryEvents();
 setupEditorTabs();
+setupStudioModes();
 setupHistory();
 setupSearch();
 setupCustomPresets();
@@ -3195,6 +3367,9 @@ if (typeof window !== "undefined") {
     clearWorkspace,
     renderFilmstrip,
     setupFilmstripControls,
+    setStudioMode,
+    setupStudioModes,
+    renderStudioPresets,
     remove,
     downloadPhoto,
     selectPreset,

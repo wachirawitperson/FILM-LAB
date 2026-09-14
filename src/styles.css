@@ -1,21 +1,22 @@
 :root {
-  color-scheme: light;
-  --paper: #f5f2eb;
-  --paper-deep: #eae4d7;
-  --paper-dark: #141412;
-  --stage-bg: #121210;
-  --ink: #141412;
-  --ink-light: #32302b;
-  --muted: #68645c;
-  --muted-light: #9e988c;
-  --line: #ded8cb;
-  --line-dark: #2c2a26;
-  --accent: #ba4c37;
-  --accent-warm: #d96a45;
-  --accent-gold: #b88c32;
-  --accent-teal: #2a6b68;
-  --focus: #25586b;
-  --card-bg: #ece7dc;
+  color-scheme: dark;
+  --paper: #121211;
+  --paper-deep: #181816;
+  --paper-dark: #0a0a09;
+  --stage-bg: #080807;
+  --ink: #eae6de;
+  --ink-light: #c8c3b7;
+  --muted: #8c877d;
+  --muted-light: #5e5a52;
+  --line: #282824;
+  --line-dark: #1e1d1a;
+  --accent: #d96a45;
+  --accent-warm: #e87b55;
+  --accent-gold: #cca044;
+  --accent-teal: #3d8a86;
+  --focus: #4b8b9e;
+  --card-bg: #1c1c19;
+  --card-hover: #252420;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
@@ -174,17 +175,18 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 
 .button-primary {
-  background: var(--ink);
+  background: var(--accent);
   color: #fff;
-  border-color: var(--ink);
+  border-color: var(--accent);
 }
 
 .button-primary:hover:not(:disabled) {
-  background: #33312c;
+  background: var(--accent-warm);
+  border-color: var(--accent-warm);
 }
 
 .button-primary:disabled {
-  opacity: .5;
+  opacity: .4;
   cursor: not-allowed;
 }
 
@@ -193,12 +195,13 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   padding: 6px 12px;
   border-color: var(--line);
   font-size: .78rem;
-  background: var(--paper);
+  background: var(--paper-deep);
+  color: var(--ink);
 }
 
 .button-subtle:hover {
-  background: var(--paper-deep);
-  border-color: var(--ink);
+  background: var(--card-hover);
+  border-color: #383732;
 }
 
 .button-danger {
@@ -206,7 +209,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 
 .button-danger:hover {
-  background: #f8e5e0;
+  background: rgba(217, 106, 69, 0.12);
   border-color: var(--accent);
 }
 
@@ -761,9 +764,231 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   display: none;
 }
 
+/* Studio Modes Navigation (Desktop >= 1100px) */
+.studio-modes {
+  display: none;
+  background: #141412;
+  border-radius: 6px;
+  padding: 3px;
+  gap: 3px;
+  border: 1px solid var(--line);
+  margin-bottom: 14px;
+}
+
+.studio-mode-btn {
+  flex: 1;
+  min-height: 36px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all .15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.studio-mode-btn:hover:not(.is-active) {
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.studio-mode-btn.is-active {
+  background: #24231f;
+  color: var(--ink);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  font-weight: 800;
+}
+
+/* Studio Mode Panel */
+.studio-mode-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.studio-mode-panel[hidden] {
+  display: none !important;
+}
+
+/* Studio Look Card (Spotlight) */
+.studio-look-card {
+  background: var(--card-bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.studio-look-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.studio-look-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.studio-look-badge {
+  font-size: .62rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.studio-look-name {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -.01em;
+}
+
+.studio-fav-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.1rem;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 4px;
+  transition: color .15s ease;
+}
+
+.studio-fav-btn.is-fav {
+  color: var(--accent);
+}
+
+.studio-look-desc {
+  margin: 0;
+  font-size: .78rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.studio-look-meta {
+  font-size: .7rem;
+  color: var(--muted-light);
+}
+
+.studio-look-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+
+.studio-action-btn {
+  font-size: .72rem;
+  padding: 5px 10px;
+}
+
+/* Compact Preset Browser in Studio Dock */
+.studio-quick-looks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.studio-quick-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2px;
+}
+
+.studio-quick-count {
+  font-size: .7rem;
+  color: var(--muted);
+}
+
+.studio-compact-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  max-height: 380px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  padding-right: 2px;
+}
+
+.compact-preset-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--card-bg);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: left;
+  transition: all .15s ease;
+  min-height: 44px;
+  color: var(--ink);
+}
+
+.compact-preset-card:hover {
+  background: var(--card-hover);
+  border-color: #383732;
+}
+
+.compact-preset-card.is-active {
+  border-color: var(--accent);
+  background: #24231f;
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.compact-preset-swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+.compact-preset-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.compact-preset-name {
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.compact-preset-cat {
+  font-size: .62rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* Studio Controls Dock (Editor Mode) */
 .studio-dock {
-  background: var(--paper);
+  background: var(--paper-deep);
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -1014,20 +1239,24 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 /* Editorial Dropdown Menu */
 .category-more-dropdown {
   position: absolute;
-  top: calc(100% + 2px);
-  right: 0;
+  top: calc(100% + 4px);
+  left: 0;
+  right: auto;
   min-width: 180px;
-  background: var(--paper);
+  max-width: calc(100vw - 24px);
+  background: var(--card-bg);
   border: 1px solid var(--line);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
-  z-index: 200;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
+  border-radius: 4px;
+  z-index: 300;
   padding: 4px 0;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
 }
 
 .category-more-dropdown[hidden] {
-  display: none;
+  display: none !important;
 }
 
 .category-dropdown-item {
@@ -1055,7 +1284,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 
 .category-dropdown-item:hover {
-  background: rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.06);
   color: var(--accent);
 }
 
@@ -1067,7 +1296,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .category-dropdown-item.is-active {
   color: var(--accent);
   font-weight: 800;
-  background: var(--paper-deep);
+  background: #24231f;
 }
 
 .dropdown-item-check {
@@ -2193,6 +2422,23 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     display: flex;
   }
 
+  .editor-shell.is-editor-mode:not([data-active-panel]) .studio-dock,
+  .editor-shell.is-editor-mode[data-active-panel="looks"] .studio-dock {
+    display: none;
+  }
+
+  .editor-shell.is-editor-mode[data-active-panel="adjust"] .studio-dock,
+  .editor-shell.is-editor-mode[data-active-panel="fx"] .studio-dock {
+    display: block;
+    border: none;
+    padding: 0;
+  }
+
+  .studio-modes,
+  .studio-mode-panel {
+    display: none !important;
+  }
+
   /* Mobile Sticky Bottom Action Bar */
   .editor-shell.is-editor-mode .mobile-action-bar:not([hidden]) {
     position: sticky;
@@ -2202,12 +2448,12 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     gap: 10px;
     margin: 16px -14px calc(-1 * max(12px, env(safe-area-inset-bottom)));
     padding: 10px 14px max(12px, env(safe-area-inset-bottom));
-    background: rgba(245, 242, 235, 0.95);
+    background: rgba(18, 18, 17, 0.94);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     border-top: 1px solid var(--line);
     z-index: 35;
-    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.3);
   }
 
   .mobile-change-btn {
@@ -2404,6 +2650,23 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     display: flex;
   }
 
+  .editor-shell.is-editor-mode:not([data-active-panel]) .studio-dock,
+  .editor-shell.is-editor-mode[data-active-panel="looks"] .studio-dock {
+    display: none;
+  }
+
+  .editor-shell.is-editor-mode[data-active-panel="adjust"] .studio-dock,
+  .editor-shell.is-editor-mode[data-active-panel="fx"] .studio-dock {
+    display: block;
+    border: none;
+    padding: 0;
+  }
+
+  .studio-modes,
+  .studio-mode-panel {
+    display: none !important;
+  }
+
   .editor-shell.is-editor-mode .studio-dock {
     grid-column: 1;
     border-left: 0;
@@ -2419,43 +2682,132 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 
 /* Desktop Studio Layout (1100px+) */
 @media (min-width: 1100px) {
-  .app-shell { padding: 32px 40px; }
+  .app-shell { padding: 24px 36px; max-width: 1680px; }
 
-  /* Editor Mode Layout (Desktop Darkroom Studio) */
+  /* Editor Mode Layout (Desktop Darkroom Studio: Left Photo Workspace, Right Studio Controls) */
   .editor-shell.is-editor-mode {
-    grid-template-columns: minmax(0, 1fr) 420px;
-    min-height: 720px;
+    grid-template-columns: minmax(0, 1fr) 380px;
+    gap: 28px;
     align-items: start;
+    min-height: calc(100vh - 100px);
   }
 
   .editor-shell.is-editor-mode .intro-panel {
     display: none;
   }
 
+  /* Left column: Photo Workspace (Photo Preview + Filmstrip + Film Index) */
   .editor-shell.is-editor-mode .stage-section {
     grid-column: 1;
-    min-height: 720px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 0;
     position: sticky;
-    top: 24px;
+    top: 20px;
   }
 
   .stage-viewport img,
   .stage-viewport canvas {
-    max-height: 74vh;
+    max-height: 68vh;
   }
 
+  /* Right column: Studio Controls Dock */
   .editor-shell.is-editor-mode .studio-dock {
     grid-column: 2;
-    border-top: 0;
-    border-left: 1px solid var(--line);
-    max-height: 85vh;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--paper-deep);
+    position: sticky;
+    top: 24px;
+    max-height: calc(100vh - 48px);
     overflow-y: auto;
     scrollbar-width: thin;
-    padding-left: 20px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
   }
 
-  .preset-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  /* Studio Modes Tabs visible on desktop */
+  .studio-modes {
+    display: flex;
+  }
+
+  /* Mobile tabs hidden on desktop */
+  .editor-shell.is-editor-mode .editor-tabs {
+    display: none !important;
+  }
+
+  /* Film Index in Left Column directly below Filmstrip */
+  .editor-shell.is-editor-mode .discovery-section {
+    display: flex !important;
+    flex-direction: column;
+    gap: 16px;
+    border-top: 1px solid var(--line);
+    padding-top: 24px;
+    min-width: 0;
+  }
+
+  .editor-shell.is-editor-mode .preset-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 14px;
+  }
+
+  /* Tool Accordions inside Studio Dock on desktop are styled as clean panels */
+  .studio-dock .tool-accordion {
+    border: none;
+    background: transparent;
+  }
+
+  .studio-dock .accordion-summary {
+    display: none;
+  }
+
+  .studio-dock .accordion-content {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  /* Studio Dock Mode switching on Desktop */
+  .studio-dock:not([data-studio-mode]) #studio-mode-presets,
+  .studio-dock[data-studio-mode="presets"] #studio-mode-presets {
+    display: flex !important;
+  }
+  .studio-dock:not([data-studio-mode]) .secondary-tools-section,
+  .studio-dock[data-studio-mode="presets"] .secondary-tools-section {
+    display: none !important;
+  }
+
+  .studio-dock[data-studio-mode="adjust"] #studio-mode-presets,
+  .studio-dock[data-studio-mode="effects"] #studio-mode-presets {
+    display: none !important;
+  }
+
+  .studio-dock[data-studio-mode="adjust"] .secondary-tools-section,
+  .studio-dock[data-studio-mode="effects"] .secondary-tools-section {
+    display: flex !important;
+    flex-direction: column;
+    gap: 16px;
+    border-top: none;
+    padding-top: 0;
+  }
+
+  .studio-dock[data-studio-mode="adjust"] #accordion-adjust {
+    display: block !important;
+  }
+  .studio-dock[data-studio-mode="adjust"] #accordion-effects {
+    display: none !important;
+  }
+
+  .studio-dock[data-studio-mode="effects"] #accordion-adjust {
+    display: none !important;
+  }
+  .studio-dock[data-studio-mode="effects"] #accordion-effects {
+    display: block !important;
   }
 
   /* Empty state Desktop layout */
