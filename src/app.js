@@ -5,7 +5,8 @@ const LIMIT = 1400;
 const STORAGE_KEYS = {
   FAVORITES: "filmlab-favorites",
   RECENT: "filmlab-recent",
-  CUSTOM: "filmlab-custom-presets"
+  CUSTOM: "filmlab-custom-presets",
+  THEME: "filmlab_theme"
 };
 
 const cats = [
@@ -409,6 +410,8 @@ function saveStorageList(key, list) {
 const $ = id => document.getElementById(id);
 
 const el = {
+  appShell: $("app-shell"),
+  themeToggle: $("theme-toggle"),
   shell: $("editor-shell"),
   introPanel: $("intro-panel"),
   input: $("photo-input"),
@@ -2591,6 +2594,8 @@ async function downloadPhoto() {
 
 function enterEditorMode(file) {
   el.shell.classList.add("is-editor-mode");
+  if (el.appShell) el.appShell.classList.add("is-editor-mode");
+  document.body.classList.add("is-editor-mode");
   el.introPanel.hidden = true;
   el.emptyState.hidden = true;
   el.uploadPanel.hidden = true;
@@ -2680,6 +2685,8 @@ function remove() {
   if (state.frame) cancelAnimationFrame(state.frame);
   el.image.removeAttribute("src");
   el.shell.classList.remove("is-editor-mode");
+  if (el.appShell) el.appShell.classList.remove("is-editor-mode");
+  document.body.classList.remove("is-editor-mode");
   el.introPanel.hidden = false;
   el.emptyState.hidden = false;
   el.uploadPanel.hidden = false;
@@ -2865,6 +2872,11 @@ function setActivePanel(panel) {
   }
   if (panel === "fx" && el.accordionEffects && !el.accordionEffects.open) {
     el.accordionEffects.open = true;
+  }
+
+  // Ensure scrollable panel starts at top when switching tabs
+  if (el.studioDock) {
+    el.studioDock.scrollTop = 0;
   }
 }
 
@@ -3311,6 +3323,49 @@ function setupCustomPresets() {
   });
 }
 
+function applyTheme(theme, save = true) {
+  const isLight = theme === "light";
+  document.documentElement.setAttribute("data-theme", isLight ? "light" : "dark");
+  if (save) {
+    try {
+      localStorage.setItem(STORAGE_KEYS.THEME, isLight ? "light" : "dark");
+    } catch {}
+  }
+  const toggleBtn = el.themeToggle || document.getElementById("theme-toggle");
+  if (toggleBtn) {
+    toggleBtn.setAttribute("aria-checked", isLight ? "true" : "false");
+    toggleBtn.setAttribute("aria-label", isLight ? "Switch to dark theme" : "Switch to light theme");
+    toggleBtn.title = isLight ? "Switch to dark theme (Current: Light)" : "Switch to light theme (Current: Dark)";
+  }
+  const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+  if (themeColorMeta) {
+    themeColorMeta.setAttribute("content", isLight ? "#f7f5f0" : "#141412");
+  }
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute("data-theme") || "dark";
+  const next = current === "light" ? "dark" : "light";
+  applyTheme(next, true);
+  return next;
+}
+
+function initTheme() {
+  let saved = null;
+  try {
+    saved = localStorage.getItem(STORAGE_KEYS.THEME);
+  } catch {}
+  const theme = (saved === "light" || saved === "dark") ? saved : "dark";
+  applyTheme(theme, false);
+
+  const toggleBtn = el.themeToggle || document.getElementById("theme-toggle");
+  if (toggleBtn) {
+    toggleBtn.addEventListener("click", () => {
+      toggleTheme();
+    });
+  }
+}
+
 setupSplitInteractions();
 setupSliders();
 setupResetControls();
@@ -3321,6 +3376,7 @@ setupHistory();
 setupSearch();
 setupCustomPresets();
 setupFilmstripControls();
+initTheme();
 
 if (typeof window !== "undefined") {
   window.__filmlab = {
@@ -3397,7 +3453,11 @@ if (typeof window !== "undefined") {
       if (el.filmSearchClear) el.filmSearchClear.hidden = !state.searchQuery.trim();
       renderGrid();
       renderRecentRow();
-    }
+    },
+    initTheme,
+    applyTheme,
+    toggleTheme,
+    getTheme: () => document.documentElement.getAttribute("data-theme") || "dark"
   };
   window.__FILM_LAB__ = window.__filmlab;
 }

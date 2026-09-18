@@ -25,6 +25,18 @@
       content="A quiet digital film studio for discovering authentic analog-inspired looks, comparing before and after, and creating beautiful film-style photographs directly in your browser."
     />
     <link rel="stylesheet" href="src/styles.css" />
+    <script>
+      (function() {
+        try {
+          var t = localStorage.getItem('filmlab_theme');
+          if (t === 'light' || t === 'dark') {
+            document.documentElement.setAttribute('data-theme', t);
+          } else {
+            document.documentElement.setAttribute('data-theme', 'dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
 
   <body>
@@ -65,6 +77,25 @@
               <span id="download-btn-text">Download</span>
             </button>
           </div>
+        </div>
+
+        <!-- Theme Toggle (Dark / Light) -->
+        <div class="theme-toggle-wrap" id="theme-toggle-wrap">
+          <button
+            class="theme-toggle"
+            id="theme-toggle"
+            type="button"
+            role="switch"
+            aria-checked="false"
+            aria-label="Switch to light theme"
+            title="Toggle theme (Current: Dark)"
+          >
+            <span class="theme-toggle-track" aria-hidden="true">
+              <span class="theme-glyph theme-glyph-sun">☀</span>
+              <span class="theme-toggle-thumb"></span>
+              <span class="theme-glyph theme-glyph-moon">☾</span>
+            </span>
+          </button>
         </div>
       </header>
 
