@@ -3476,7 +3476,7 @@ if (typeof window !== "undefined") {
   const AUTO_STYLE_ID = "filmlab-smart-auto";
   const style = document.createElement("style");
   style.id = AUTO_STYLE_ID;
-  style.textContent = \`
+  style.textContent = `
     /* P1 — Preview follows the source image geometry */
     .filmlab-dynamic-aspect {
       aspect-ratio: var(--filmlab-image-aspect, 4 / 3) !important;
@@ -3712,7 +3712,7 @@ if (typeof window !== "undefined") {
       .filmlab-recommendations { grid-template-columns: 1fr; }
       .filmlab-auto-panel { padding: 12px; }
     }
-  \`;
+  `;
   document.head.appendChild(style);
 
   let smartMode = "manual";
@@ -3795,7 +3795,7 @@ if (typeof window !== "undefined") {
     auto.className = "filmlab-auto-panel";
     auto.id = "filmlab-auto-panel";
     auto.hidden = true;
-    auto.innerHTML = \`
+    auto.innerHTML = `
       <div class="filmlab-auto-head">
         <div>
           <div class="filmlab-auto-kicker">SMART MATCH · LOCAL</div>
@@ -3808,7 +3808,7 @@ if (typeof window !== "undefined") {
       <p class="filmlab-intent-title">มึงอยากให้ภาพออกมาแบบไหน?</p>
       <div class="filmlab-intents" id="filmlab-intents"></div>
       <div class="filmlab-recommendations" id="filmlab-recommendations"></div>
-    \`;
+    `;
 
     const anchor = discovery.querySelector(".discovery-header");
     anchor?.insertAdjacentElement("afterend", rail);
@@ -4037,11 +4037,11 @@ if (typeof window !== "undefined") {
     const box = document.getElementById("filmlab-analysis");
     if (!box) return;
     const chips = [
-      \`Scene · \${a.scene}\`,
-      \`Light · \${a.brightness < .3 ? "Low" : a.brightness > .7 ? "Bright" : "Balanced"}\`,
-      \`Color · \${a.saturation > .34 ? "Rich" : a.saturation < .15 ? "Muted" : "Balanced"}\`,
-      \`Mood · \${a.warmth > .07 ? "Warm" : a.warmth < -.07 ? "Cool" : "Neutral"}\`,
-      \`Palette · \${a.dominant}\`
+      `Scene · ${a.scene}`,
+      `Light · ${a.brightness < .3 ? "Low" : a.brightness > .7 ? "Bright" : "Balanced"}`,
+      `Color · ${a.saturation > .34 ? "Rich" : a.saturation < .15 ? "Muted" : "Balanced"}`,
+      `Mood · ${a.warmth > .07 ? "Warm" : a.warmth < -.07 ? "Cool" : "Neutral"}`,
+      `Palette · ${a.dominant}`
     ];
     box.replaceChildren(...chips.map(x => {
       const s = document.createElement("span");
@@ -4094,12 +4094,12 @@ if (typeof window !== "undefined") {
       b.className = "filmlab-recommendation";
       const cat = p.category === "KODAK_FILM" ? "Kodak Film" : (cats.find(x => x[0] === p.category)?.[1] || p.category || "Film Look");
       const reason = recommendationReason(p, a, smartIntent);
-      b.innerHTML = \`
+      b.innerHTML = `
         <span class="filmlab-rec-name"></span>
         <span class="filmlab-rec-category"></span>
         <span class="filmlab-rec-reason"></span>
         <span class="filmlab-rec-use">Use this Look →</span>
-      \`;
+      `;
       b.querySelector(".filmlab-rec-name").textContent = p.name;
       b.querySelector(".filmlab-rec-category").textContent = cat;
       b.querySelector(".filmlab-rec-reason").textContent = reason;
@@ -4135,9 +4135,9 @@ if (typeof window !== "undefined") {
     const h = state.sourceImage.naturalHeight || img.naturalHeight || state.sourceImage.height;
     if (!w || !h) return;
     viewport.classList.add("filmlab-dynamic-aspect");
-    viewport.style.setProperty("--filmlab-image-aspect", \`\${w} / \${h}\`);
-    viewport.setAttribute("data-image-aspect", \`\${w}:\${h}\`);
-    viewport.setAttribute("aria-label", \`Photo preview, original aspect ratio \${w} by \${h}\`);
+    viewport.style.setProperty("--filmlab-image-aspect", `${w} / ${h}`);
+    viewport.setAttribute("data-image-aspect", `${w}:${h}`);
+    viewport.setAttribute("aria-label", `Photo preview, original aspect ratio ${w} by ${h}`);
   }
 
   function setupLightTableUpload() {
