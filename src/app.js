@@ -2862,6 +2862,73 @@ el.input.onchange = e => files(e.target.files);
 ["dragenter", "dragover"].forEach(n => el.drop.addEventListener(n, e => { e.preventDefault(); el.drop.classList.add("is-dragging"); }));
 ["dragleave", "drop"].forEach(n => el.drop.addEventListener(n, e => { e.preventDefault(); el.drop.classList.remove("is-dragging"); }));
 el.drop.addEventListener("drop", e => files(e.dataTransfer.files));
+
+// Full Light Table (empty state & preview stage) upload zone
+if (el.previewStage) {
+  el.previewStage.addEventListener("click", () => {
+    if (el.shell && !el.shell.classList.contains("is-editor-mode")) {
+      choose();
+    }
+  });
+
+  const setStageDrag = (isDragging) => {
+    if (el.previewStage) el.previewStage.classList.toggle("is-dragging", isDragging);
+    if (el.emptyState) el.emptyState.classList.toggle("is-dragging", isDragging);
+  };
+
+  ["dragenter", "dragover"].forEach(n => {
+    el.previewStage.addEventListener(n, (e) => {
+      e.preventDefault();
+      setStageDrag(true);
+    });
+  });
+
+  ["dragleave", "drop"].forEach(n => {
+    el.previewStage.addEventListener(n, (e) => {
+      e.preventDefault();
+      setStageDrag(false);
+    });
+  });
+
+  el.previewStage.addEventListener("drop", (e) => {
+    e.preventDefault();
+    setStageDrag(false);
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+      files(e.dataTransfer.files);
+    }
+  });
+}
+
+if (el.emptyState) {
+  el.emptyState.addEventListener("keydown", (e) => {
+    if ((e.key === "Enter" || e.key === " ") && el.shell && !el.shell.classList.contains("is-editor-mode")) {
+      e.preventDefault();
+      choose();
+    }
+  });
+}
+
+// Global paste listener: paste image files anywhere on page
+window.addEventListener("paste", (e) => {
+  const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : "";
+  if (activeTag === "input" || activeTag === "textarea") return;
+
+  const items = e.clipboardData && e.clipboardData.items;
+  if (!items) return;
+
+  const pastedFiles = [];
+  for (let i = 0; i < items.length; i++) {
+    if (items[i].type && items[i].type.startsWith("image/")) {
+      const file = items[i].getAsFile();
+      if (file) pastedFiles.push(file);
+    }
+  }
+
+  if (pastedFiles.length > 0) {
+    e.preventDefault();
+    files(pastedFiles);
+  }
+});
 function setupCategoryEvents() {
   document.addEventListener("click", (e) => {
     if (state.isMoreOpen && !e.target.closest(".category-more-wrap")) {
