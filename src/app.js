@@ -26,11 +26,13 @@ const cats = [
 ];
 
 const PRIMARY_CATS = [
-  ["ALL", "All Looks"],
+  ["ALL", "✦ All"],
   ["FAVORITES", "★ Favorites"],
-  ["WARM", "Warm"],
-  ["SOFT", "Soft"],
-  ["VINTAGE", "Vintage"]
+  ["WARM", "☀ Warm"],
+  ["SOFT", "☁ Soft"],
+  ["VINTAGE", "🎞 Vintage"],
+  ["CINEMATIC", "🎬 Cinematic"],
+  ["BW", "◐ B&W"]
 ];
 
 const MORE_CATS = [
@@ -38,8 +40,6 @@ const MORE_CATS = [
   ["JAPANESE", "Japanese"],
   ["FLASH", "Flash"],
   ["NIGHT", "Night"],
-  ["CINEMATIC", "Cinematic"],
-  ["BW", "B&W"],
   ["KODAK_FILM", "Kodak Film"]
 ];
 
@@ -1915,9 +1915,41 @@ function getFilteredPresets() {
   } else if (state.selectedCategory === "JAPANESE") {
     list = presetLibrary.filter(p => p.category === "JAPANESE");
   } else if (state.selectedCategory === "BW") {
-    list = presetLibrary.filter(p => p.category === "BW" || p.id === "kodak-double-x-5222");
+    list = presetLibrary.filter(p => p.category === "BW" || p.id === "kodak-double-x-5222" || (lookMoodTags[p.id] || []).includes("bw"));
   } else if (state.selectedCategory === "KODAK_FILM") {
     list = presetLibrary.filter(p => p.category === "KODAK_FILM" || p.collection === "Kodak Film");
+  } else if (state.selectedCategory === "WARM") {
+    list = presetLibrary.filter(p => {
+      const tags = (lookMoodTags[p.id] || []).map(t => t.toLowerCase());
+      const rec = (p.recommendedFor || []).map(t => t.toLowerCase());
+      const char = (p.character || "").toLowerCase();
+      const desc = (p.description || "").toLowerCase();
+      return tags.includes("warm") || p.category === "WARM" || rec.includes("warm") || char.includes("warm") || desc.includes("warm") || p.category === "1998" || p.category === "KODAK";
+    });
+  } else if (state.selectedCategory === "SOFT") {
+    list = presetLibrary.filter(p => {
+      const tags = (lookMoodTags[p.id] || []).map(t => t.toLowerCase());
+      const rec = (p.recommendedFor || []).map(t => t.toLowerCase());
+      const char = (p.character || "").toLowerCase();
+      const desc = (p.description || "").toLowerCase();
+      return tags.includes("soft") || p.category === "SOFT" || rec.includes("soft") || char.includes("soft") || desc.includes("soft") || p.category === "JAPANESE";
+    });
+  } else if (state.selectedCategory === "VINTAGE") {
+    list = presetLibrary.filter(p => {
+      const tags = (lookMoodTags[p.id] || []).map(t => t.toLowerCase());
+      const rec = (p.recommendedFor || []).map(t => t.toLowerCase());
+      const char = (p.character || "").toLowerCase();
+      const desc = (p.description || "").toLowerCase();
+      return tags.includes("vintage") || p.category === "VINTAGE" || rec.includes("vintage") || char.includes("vintage") || desc.includes("vintage") || p.category === "DISPOSABLE" || p.collection === "Kodak Film";
+    });
+  } else if (state.selectedCategory === "CINEMATIC") {
+    list = presetLibrary.filter(p => {
+      const tags = (lookMoodTags[p.id] || []).map(t => t.toLowerCase());
+      const rec = (p.recommendedFor || []).map(t => t.toLowerCase());
+      const char = (p.character || "").toLowerCase();
+      const desc = (p.description || "").toLowerCase();
+      return tags.includes("cinematic") || p.category === "CINEMATIC" || rec.includes("cinematic") || char.includes("cinematic") || desc.includes("cinematic") || p.collection === "Kodak Film";
+    });
   } else {
     const targetMood = state.selectedCategory.toLowerCase();
     list = presetLibrary.filter(p => (lookMoodTags[p.id] || []).includes(targetMood));
@@ -1976,7 +2008,7 @@ function updateDiscoveryMeta(filteredCount, totalCount) {
     }
 
     if (state.selectedCategory !== "ALL") {
-      const catTuple = cats.find(c => c[0] === state.selectedCategory);
+      const catTuple = PRIMARY_CATS.find(c => c[0] === state.selectedCategory) || cats.find(c => c[0] === state.selectedCategory);
       const catLabel = catTuple ? catTuple[1].replace("★ ", "") : state.selectedCategory;
       const chip = document.createElement("button");
       chip.type = "button";
@@ -2264,10 +2296,14 @@ function renderGrid() {
     n.textContent = p.name;
     if (p.source === "custom") {
       c.textContent = p.basePresetName ? `Based on ${p.basePresetName}` : "Custom Look";
-    } else if (p.category === "KODAK_FILM" || p.collection === "Kodak Film") {
-      c.textContent = p.stockSubtitle || p.character || p.description;
+    } else if (p.stockSubtitle) {
+      c.textContent = p.stockSubtitle;
+    } else if (p.character) {
+      c.textContent = p.character;
+    } else if (p.description) {
+      c.textContent = p.description;
     } else {
-      c.textContent = cats.find(a => a[0] === p.category)?.[1] || p.character || p.description || p.category;
+      c.textContent = cats.find(a => a[0] === p.category)?.[1] || p.category;
     }
     b.append(wrap, n, c);
     b.onclick = () => selectPreset(p);

@@ -1750,10 +1750,13 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 
 .preset-card small {
   color: var(--muted);
-  font-size: .63rem;
-  letter-spacing: .04em;
-  text-transform: uppercase;
+  font-size: .68rem;
+  letter-spacing: .02em;
   font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 
