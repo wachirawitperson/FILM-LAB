@@ -508,6 +508,18 @@ const el = {
   customDetailActions: $("custom-detail-actions"),
   detailRenameBtn: $("detail-rename-btn"),
   detailDeleteBtn: $("detail-delete-btn"),
+  discoveryModeBar: $("discovery-mode-bar"),
+  modeBtnAuto: $("mode-btn-auto"),
+  modeBtnSurprise: $("mode-btn-surprise"),
+  modeBtnManual: $("mode-btn-manual"),
+  autoContainer: $("auto-mode-container"),
+  surpriseContainer: $("surprise-mode-container"),
+  manualContainer: $("manual-mode-container"),
+  autoTitle: $("auto-scene-title"),
+  autoSubtitle: $("auto-scene-subtitle"),
+  autoList: $("auto-recommendations-list"),
+  surpriseList: $("surprise-recommendations-list"),
+  rollAgainBtn: $("roll-again-btn"),
   recentSection: $("recent-looks-section"),
   recentRow: $("recent-looks-row"),
   favEmptyState: $("favorites-empty-state"),
@@ -772,7 +784,13 @@ function setActivePhoto(id) {
   if (el.btnResetLook) el.btnResetLook.disabled = !state.activePreset;
   updateLookDetail();
   renderRecentRow();
-  renderGrid();
+  if (state.discoveryMode === "auto") {
+    renderAutoRecommendations();
+  } else if (state.discoveryMode === "surprise") {
+    renderSurpriseCandidates(false);
+  } else {
+    renderGrid();
+  }
   syncAdjustmentSliders();
   syncEffectSliders();
   updateResetBtnStates();
@@ -996,6 +1014,8 @@ const state = {
   isDraggingSplit: false,
   isMoreOpen: false,
   activePanel: "looks",
+  discoveryMode: "manual",
+  surpriseCandidates: [],
   processingStatus: "idle",
   frame: null,
   token: 0,
@@ -2076,6 +2096,317 @@ function surpriseMe() {
   selectPreset(chosen);
 }
 
+function analyzeActivePhoto() {
+  if (!state.sourceImage) return null;
+  const canvas = document.createElement("canvas");
+  const size = 100;
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) return null;
+
+  try {
+    ctx.drawImage(state.sourceImage, 0, 0, size, size);
+    const data = ctx.getImageData(0, 0, size, size).data;
+
+    let totalR = 0, totalG = 0, totalB = 0;
+    let totalLuminance = 0;
+    let skinPixels = 0;
+    let greenPixels = 0;
+    const totalPixels = size * size;
+
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      totalR += r;
+      totalG += g;
+      totalB += b;
+
+      const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+      totalLuminance += lum;
+
+      // Nature / foliage green detection
+      if (g > r * 1.12 && g > b * 1.12 && g > 40) {
+        greenPixels++;
+      }
+
+      // Warm skin / golden tone detection
+      if (r > g && g > b && (r - b) > 20 && r > 60 && r < 240) {
+        skinPixels++;
+      }
+    }
+
+    const avgR = totalR / totalPixels;
+    const avgG = totalG / totalPixels;
+    const avgB = totalB / totalPixels;
+    const avgLum = totalLuminance / totalPixels;
+
+    let variance = 0;
+    for (let i = 0; i < data.length; i += 4) {
+      const lum = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+      variance += (lum - avgLum) * (lum - avgLum);
+    }
+    const stdDev = Math.sqrt(variance / totalPixels);
+
+    const warmth = avgR - avgB;
+    const greenRatio = greenPixels / totalPixels;
+    const skinRatio = skinPixels / totalPixels;
+    const isLowLight = avgLum < 85;
+    const isBright = avgLum > 165;
+    const isHighContrast = stdDev > 55;
+
+    let descriptor = "Daylight · Balanced Contrast";
+    if (isLowLight) {
+      descriptor = "Low-Light / Night Scene · Deep Shadows";
+    } else if (greenRatio > 0.12) {
+      descriptor = "Nature / Foliage · Vibrant Greens";
+    } else if (skinRatio > 0.16 || warmth > 18) {
+      descriptor = "Warm Sunlight / Portrait · Golden Tones";
+    } else if (warmth < -8) {
+      descriptor = "Cool Tone / Overcast · Muted Ambient";
+    } else if (isHighContrast) {
+      descriptor = "High Contrast Exterior · Rich Separation";
+    }
+
+    return {
+      avgLum,
+      stdDev,
+      warmth,
+      greenRatio,
+      skinRatio,
+      isLowLight,
+      isBright,
+      isHighContrast,
+      descriptor
+    };
+  } catch (err) {
+    console.warn("Local photo analysis fallback:", err);
+    return null;
+  }
+}
+
+function getAutoRecommendations() {
+  const analysis = analyzeActivePhoto();
+  const recs = [];
+
+  const addRec = (presetId, reason) => {
+    if (recs.some(r => r.preset.id === presetId)) return;
+    const p = getPresetById(presetId);
+    if (p) recs.push({ preset: p, reason });
+  };
+
+  if (!analysis) {
+    addRec("golden-200", "Warm nostalgic daylight with classic color harmony");
+    addRec("kodak-vision3-250d", "Versatile organic daylight cinema with natural latitude");
+    addRec("1998-warm", "Iconic compact film aesthetic with gentle warmth");
+    return { analysis: { descriptor: "Balanced Daylight" }, recs };
+  }
+
+  if (analysis.isLowLight) {
+    addRec("kodak-vision3-500t", "Flagship low-light cinema stock with rich shadow latitude and subtle halation");
+    addRec("1998-night-color", "Vibrant neon and street glow with rich contrast");
+    addRec("tungsten", "Moody cool shadow balance against warm practical lights");
+  } else if (analysis.greenRatio > 0.12) {
+    addRec("fresh-green", "Emerald foliage separation with crisp natural highlights");
+    addRec("pastel-green", "Lifted airy pastel greens for natural landscapes");
+    addRec("1998-green", "Rich foliage tones with nostalgic warm sky roll-off");
+  } else if (analysis.skinRatio > 0.16 || analysis.warmth > 18) {
+    addRec("golden-200", "Warm golden daylight with natural, flattering skin rendition");
+    addRec("kodak-5247", "1970s cinema amber warmth with dreamlike expressive shadows");
+    addRec("1998-portrait-warm", "Golden-hour compact warmth without orange skin cast");
+  } else if (analysis.warmth < -8) {
+    addRec("cool-natural", "Refined cool editorial coolness for overcast & street light");
+    addRec("kodak-vision3-50d", "Fine-grain daylight cinema with crisp neutral roll-off");
+    addRec("soft-japanese", "Airy, understated daylight tones with gentle contrast");
+  } else if (analysis.isHighContrast) {
+    addRec("cinema-warm", "Deep warm editorial separation with punchy contrast");
+    addRec("classic-bw", "High tonal dynamic separation suited for iconic monochrome");
+    addRec("kodak-vision3-250d", "Versatile daylight stock with organic latitude");
+  } else {
+    addRec("kodak-vision3-250d", "Versatile daylight motion picture stock with balanced tonality");
+    addRec("golden-200", "Warm nostalgic daylight with classic color harmony");
+    addRec("1998-warm", "Signature 1998 compact film aesthetic with warm character");
+  }
+
+  // Fallbacks to ensure exactly 3 recommendations
+  const fallbackIds = ["golden-200", "kodak-vision3-250d", "1998-warm", "classic-color", "eastman-5248"];
+  for (const id of fallbackIds) {
+    if (recs.length >= 3) break;
+    addRec(id, "Classic analog color reproduction with balanced film contrast");
+  }
+
+  return { analysis, recs: recs.slice(0, 3) };
+}
+
+function renderAutoRecommendations() {
+  if (!el.autoList) return;
+  if (!state.sourceImage) {
+    if (el.autoTitle) el.autoTitle.textContent = "No photo loaded";
+    if (el.autoSubtitle) el.autoSubtitle.textContent = "Upload a photo to see smart film recommendations.";
+    el.autoList.replaceChildren();
+    return;
+  }
+
+  const { analysis, recs } = getAutoRecommendations();
+  if (el.autoTitle) el.autoTitle.textContent = `Scene: ${analysis.descriptor}`;
+  if (el.autoSubtitle) el.autoSubtitle.textContent = "Based on local image analysis (warmth, exposure, contrast & tones).";
+
+  el.autoList.replaceChildren(...recs.map(({ preset, reason }) => {
+    const card = document.createElement("div");
+    const isCurrent = state.activePreset?.id === preset.id;
+    card.className = `recommendation-card${isCurrent ? " is-active" : ""}`;
+
+    const topRow = document.createElement("div");
+    topRow.className = "rec-top-row";
+
+    const canvasWrap = document.createElement("div");
+    canvasWrap.className = "rec-canvas-wrap";
+    const canvas = document.createElement("canvas");
+    draw(canvas, state.sourceImage, getPresetEffectiveParams(preset), 140);
+    canvasWrap.appendChild(canvas);
+
+    const info = document.createElement("div");
+    info.className = "rec-info";
+
+    const nameRow = document.createElement("div");
+    nameRow.className = "rec-name-row";
+    const name = document.createElement("span");
+    name.className = "rec-name";
+    name.textContent = preset.name;
+    const badge = document.createElement("span");
+    badge.className = "rec-badge";
+    badge.textContent = preset.stockSubtitle || preset.category;
+    nameRow.append(name, badge);
+
+    const subtitle = document.createElement("div");
+    subtitle.className = "rec-subtitle";
+    subtitle.textContent = preset.character || preset.description;
+
+    info.append(nameRow, subtitle);
+    topRow.append(canvasWrap, info);
+
+    const rationale = document.createElement("div");
+    rationale.className = "rec-rationale";
+    const ratIcon = document.createElement("span");
+    ratIcon.className = "rec-rationale-icon";
+    ratIcon.textContent = "💡";
+    const ratText = document.createElement("span");
+    ratText.textContent = reason;
+    rationale.append(ratIcon, ratText);
+
+    const actions = document.createElement("div");
+    actions.className = "rec-actions";
+    const applyBtn = document.createElement("button");
+    applyBtn.type = "button";
+    applyBtn.className = `rec-apply-btn${isCurrent ? " is-current" : ""}`;
+    applyBtn.textContent = isCurrent ? "Active Look ✓" : "Use this Look";
+    applyBtn.onclick = () => {
+      selectPreset(preset);
+      renderAutoRecommendations();
+    };
+    actions.appendChild(applyBtn);
+
+    card.append(topRow, rationale, actions);
+    return card;
+  }));
+}
+
+function renderSurpriseCandidates(forceNew = false) {
+  if (!el.surpriseList) return;
+  if (!state.sourceImage) {
+    el.surpriseList.replaceChildren();
+    return;
+  }
+
+  if (forceNew || !state.surpriseCandidates || state.surpriseCandidates.length === 0) {
+    const pool = presetLibrary.filter(p => p.id !== state.activePreset?.id);
+    const shuffled = pool.slice().sort(() => 0.5 - Math.random());
+    state.surpriseCandidates = shuffled.slice(0, 3);
+  }
+
+  el.surpriseList.replaceChildren(...state.surpriseCandidates.map(preset => {
+    const card = document.createElement("div");
+    const isCurrent = state.activePreset?.id === preset.id;
+    card.className = `recommendation-card${isCurrent ? " is-active" : ""}`;
+
+    const topRow = document.createElement("div");
+    topRow.className = "rec-top-row";
+
+    const canvasWrap = document.createElement("div");
+    canvasWrap.className = "rec-canvas-wrap";
+    const canvas = document.createElement("canvas");
+    draw(canvas, state.sourceImage, getPresetEffectiveParams(preset), 140);
+    canvasWrap.appendChild(canvas);
+
+    const info = document.createElement("div");
+    info.className = "rec-info";
+
+    const nameRow = document.createElement("div");
+    nameRow.className = "rec-name-row";
+    const name = document.createElement("span");
+    name.className = "rec-name";
+    name.textContent = preset.name;
+    const badge = document.createElement("span");
+    badge.className = "rec-badge";
+    badge.textContent = preset.stockSubtitle || preset.category;
+    nameRow.append(name, badge);
+
+    const subtitle = document.createElement("div");
+    subtitle.className = "rec-subtitle";
+    subtitle.textContent = preset.character || preset.description;
+
+    info.append(nameRow, subtitle);
+    topRow.append(canvasWrap, info);
+
+    const actions = document.createElement("div");
+    actions.className = "rec-actions";
+    const applyBtn = document.createElement("button");
+    applyBtn.type = "button";
+    applyBtn.className = `rec-apply-btn${isCurrent ? " is-current" : ""}`;
+    applyBtn.textContent = isCurrent ? "Active Look ✓" : "Use this Look";
+    applyBtn.onclick = () => {
+      selectPreset(preset);
+      renderSurpriseCandidates(false);
+    };
+    actions.appendChild(applyBtn);
+
+    card.append(topRow, actions);
+    return card;
+  }));
+}
+
+function setDiscoveryMode(mode) {
+  if (!["auto", "surprise", "manual"].includes(mode)) mode = "manual";
+  state.discoveryMode = mode;
+
+  const buttons = [
+    { btn: el.modeBtnAuto, mode: "auto" },
+    { btn: el.modeBtnSurprise, mode: "surprise" },
+    { btn: el.modeBtnManual, mode: "manual" }
+  ];
+
+  for (const b of buttons) {
+    if (b.btn) {
+      const isActive = b.mode === mode;
+      b.btn.classList.toggle("is-active", isActive);
+      b.btn.setAttribute("aria-selected", String(isActive));
+    }
+  }
+
+  if (el.autoContainer) el.autoContainer.hidden = (mode !== "auto");
+  if (el.surpriseContainer) el.surpriseContainer.hidden = (mode !== "surprise");
+  if (el.manualContainer) el.manualContainer.hidden = (mode !== "manual");
+
+  if (mode === "auto") {
+    renderAutoRecommendations();
+  } else if (mode === "surprise") {
+    renderSurpriseCandidates(false);
+  } else if (mode === "manual") {
+    renderGrid();
+  }
+}
+
 function renderTabs() {
   if (!el.tabs) return;
 
@@ -2777,6 +3108,7 @@ function remove() {
   if (el.studioSaveLookBtn) el.studioSaveLookBtn.disabled = true;
   if (el.shell) delete el.shell.dataset.activePanel;
   setActivePanel("looks");
+  setDiscoveryMode("manual");
   clear();
   if (el.input) el.input.value = "";
   state.searchQuery = "";
@@ -2965,6 +3297,12 @@ window.addEventListener("paste", (e) => {
     files(pastedFiles);
   }
 });
+
+// Discovery Mode Switcher Events
+if (el.modeBtnAuto) el.modeBtnAuto.onclick = () => setDiscoveryMode("auto");
+if (el.modeBtnSurprise) el.modeBtnSurprise.onclick = () => setDiscoveryMode("surprise");
+if (el.modeBtnManual) el.modeBtnManual.onclick = () => setDiscoveryMode("manual");
+if (el.rollAgainBtn) el.rollAgainBtn.onclick = () => renderSurpriseCandidates(true);
 function setupCategoryEvents() {
   document.addEventListener("click", (e) => {
     if (state.isMoreOpen && !e.target.closest(".category-more-wrap")) {
@@ -3571,6 +3909,11 @@ if (typeof window !== "undefined") {
     selectPreset,
     toggleFavorite,
     surpriseMe,
+    setDiscoveryMode,
+    analyzeActivePhoto,
+    getAutoRecommendations,
+    renderAutoRecommendations,
+    renderSurpriseCandidates,
     renderTabs,
     renderGrid,
     renderRecentRow,

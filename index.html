@@ -248,39 +248,85 @@
               </div>
             </div>
 
-            <!-- Film Look Search Bar -->
-            <div class="look-search-bar" id="look-search-bar">
-              <div class="search-input-wrap">
-                <span class="search-icon" aria-hidden="true">🔍</span>
-                <input
-                  type="search"
-                  id="film-search-input"
-                  class="film-search-input"
-                  placeholder="Search film looks..."
-                  aria-label="Search film looks"
-                  autocomplete="off"
-                  spellcheck="false"
-                />
-                <button
-                  type="button"
-                  id="film-search-clear"
-                  class="film-search-clear"
-                  aria-label="Clear search"
-                  title="Clear search"
-                  hidden
-                >×</button>
+            <!-- Discovery Mode Switcher (Auto / Surprise Me / Manual) -->
+            <div class="discovery-mode-bar" id="discovery-mode-bar" role="tablist" aria-label="Film discovery modes">
+              <button class="discovery-mode-btn" id="mode-btn-auto" role="tab" aria-selected="false" data-mode="auto" type="button">
+                <span class="mode-icon" aria-hidden="true">🤖</span>
+                <span>Auto</span>
+              </button>
+              <button class="discovery-mode-btn" id="mode-btn-surprise" role="tab" aria-selected="false" data-mode="surprise" type="button">
+                <span class="mode-icon" aria-hidden="true">🎲</span>
+                <span>Surprise Me</span>
+              </button>
+              <button class="discovery-mode-btn is-active" id="mode-btn-manual" role="tab" aria-selected="true" data-mode="manual" type="button">
+                <span class="mode-icon" aria-hidden="true">🎛</span>
+                <span>Manual</span>
+              </button>
+            </div>
+
+            <!-- Auto Mode Container -->
+            <div class="auto-mode-container" id="auto-mode-container" hidden>
+              <div class="mode-view-header">
+                <span class="mode-view-badge">AI SCENE ANALYSIS</span>
+                <p class="mode-view-title" id="auto-scene-title">Analyzing photograph...</p>
+                <p class="mode-view-subtitle" id="auto-scene-subtitle">Client-side pixel analysis recommending the 3 most harmonious film stocks.</p>
               </div>
+              <div class="smart-recommendations-list" id="auto-recommendations-list"></div>
             </div>
 
-            <!-- Mood Discovery Tabs -->
-            <div class="mood-discovery-bar" id="category-tabs" role="tablist" aria-label="Film discovery moods"></div>
-
-            <!-- Discovery Meta & Active Filter Row -->
-            <div class="discovery-meta-row" id="discovery-meta-row">
-              <span class="discovery-count" id="discovery-count">69 looks</span>
-              <div class="discovery-filter-chips" id="discovery-filter-chips"></div>
-              <button type="button" class="clear-all-filters-btn" id="clear-all-filters" hidden>Clear filters</button>
+            <!-- Surprise Me Mode Container -->
+            <div class="surprise-mode-container" id="surprise-mode-container" hidden>
+              <div class="mode-view-header">
+                <div class="mode-view-header-row">
+                  <div>
+                    <span class="mode-view-badge">CURATED CANDIDATES</span>
+                    <p class="mode-view-title">Roll the Dice</p>
+                  </div>
+                  <button class="button button-subtle roll-again-btn" id="roll-again-btn" type="button">
+                    <span aria-hidden="true">🎲</span>
+                    <span>Roll Again</span>
+                  </button>
+                </div>
+                <p class="mode-view-subtitle">3 fresh candidates selected across analog film collections.</p>
+              </div>
+              <div class="smart-recommendations-list" id="surprise-recommendations-list"></div>
             </div>
+
+            <!-- Manual Mode Container -->
+            <div class="manual-mode-container" id="manual-mode-container">
+              <!-- Film Look Search Bar -->
+              <div class="look-search-bar" id="look-search-bar">
+                <div class="search-input-wrap">
+                  <span class="search-icon" aria-hidden="true">🔍</span>
+                  <input
+                    type="search"
+                    id="film-search-input"
+                    class="film-search-input"
+                    placeholder="Search film looks..."
+                    aria-label="Search film looks"
+                    autocomplete="off"
+                    spellcheck="false"
+                  />
+                  <button
+                    type="button"
+                    id="film-search-clear"
+                    class="film-search-clear"
+                    aria-label="Clear search"
+                    title="Clear search"
+                    hidden
+                  >×</button>
+                </div>
+              </div>
+
+              <!-- Mood Discovery Tabs -->
+              <div class="mood-discovery-bar" id="category-tabs" role="tablist" aria-label="Film discovery moods"></div>
+
+              <!-- Discovery Meta & Active Filter Row -->
+              <div class="discovery-meta-row" id="discovery-meta-row">
+                <span class="discovery-count" id="discovery-count">69 looks</span>
+                <div class="discovery-filter-chips" id="discovery-filter-chips"></div>
+                <button type="button" class="clear-all-filters-btn" id="clear-all-filters" hidden>Clear filters</button>
+              </div>
 
             <!-- Selected Look Detail Card (Spotlight) -->
             <div class="look-detail-card" id="look-detail-card" hidden>
@@ -332,6 +378,7 @@
               <span class="custom-empty-icon" aria-hidden="true">🏷</span>
               <p class="custom-empty-title">No custom looks yet.</p>
               <p class="custom-empty-sub">Save your current look to build your personal library.</p>
+            </div>
             </div>
           </div>
 

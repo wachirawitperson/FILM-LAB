@@ -1257,6 +1257,242 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 
 .surprise-icon { font-size: .8rem; }
 
+/* Discovery Modes Bar: [ Auto ] [ Surprise Me ] [ Manual ] */
+.discovery-mode-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-surface, #141412);
+  padding: 4px;
+  border-radius: 8px;
+  border: 1px solid var(--line-dark, rgba(255,255,255,0.08));
+  margin-bottom: 12px;
+}
+
+.discovery-mode-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 8px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--muted, #8c877e);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.discovery-mode-btn:hover {
+  color: var(--ink, #ffffff);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.discovery-mode-btn.is-active {
+  background: rgba(224, 169, 109, 0.16);
+  color: var(--accent, #e0a96d);
+  font-weight: 700;
+}
+
+.discovery-mode-btn .mode-icon {
+  font-size: 0.9rem;
+}
+
+/* Auto & Surprise Mode Containers */
+.auto-mode-container,
+.surprise-mode-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.mode-view-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  background: var(--paper-deep, #1a1a18);
+  border-radius: 8px;
+  border: 1px solid var(--line-dark, rgba(255,255,255,0.08));
+}
+
+.mode-view-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.mode-view-badge {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--accent, #e0a96d);
+  text-transform: uppercase;
+}
+
+.mode-view-title {
+  margin: 2px 0 0 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ink, #ffffff);
+}
+
+.mode-view-subtitle {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--muted, #8c877e);
+  line-height: 1.35;
+}
+
+.roll-again-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: 6px;
+}
+
+/* Smart Recommendations Cards List */
+.smart-recommendations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.recommendation-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--paper-deep, #1a1a18);
+  border: 1px solid var(--line-dark, rgba(255,255,255,0.08));
+  border-radius: 8px;
+  padding: 12px;
+  transition: border-color 0.2s ease, transform 0.15s ease;
+}
+
+.recommendation-card:hover {
+  border-color: rgba(224, 169, 109, 0.4);
+}
+
+.recommendation-card.is-active {
+  border-color: var(--accent, #e0a96d);
+  background: rgba(224, 169, 109, 0.05);
+}
+
+.rec-top-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.rec-canvas-wrap {
+  width: 72px;
+  height: 52px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #000;
+  flex-shrink: 0;
+}
+
+.rec-canvas-wrap canvas {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.rec-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.rec-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rec-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--ink, #ffffff);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rec-badge {
+  font-size: 0.60rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.08);
+  color: var(--muted, #8c877e);
+}
+
+.rec-subtitle {
+  font-size: 0.72rem;
+  color: var(--muted, #8c877e);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rec-rationale {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 6px 10px;
+  background: rgba(224, 169, 109, 0.08);
+  border-left: 3px solid var(--accent, #e0a96d);
+  border-radius: 4px;
+  font-size: 0.73rem;
+  color: var(--ink, #ffffff);
+  line-height: 1.35;
+}
+
+.rec-rationale-icon {
+  flex-shrink: 0;
+}
+
+.rec-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.rec-apply-btn {
+  padding: 6px 14px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: 6px;
+  background: var(--accent, #e0a96d);
+  color: #1a1a18;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.1s ease;
+}
+
+.rec-apply-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.rec-apply-btn.is-current {
+  background: rgba(255,255,255,0.1);
+  color: var(--muted, #8c877e);
+  cursor: default;
+}
+
 /* Film Look Search Bar */
 .look-search-bar {
   margin-bottom: 2px;
