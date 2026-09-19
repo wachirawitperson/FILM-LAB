@@ -723,6 +723,7 @@ function setActivePhoto(id) {
     el.imageMeta.textContent = `${nextPhoto.width} × ${nextPhoto.height}`;
     el.imageMeta.hidden = false;
   }
+  updatePreviewAspectRatio(nextPhoto.width, nextPhoto.height);
 
   // 5. Restore edit state
   if (nextPhoto.editState && nextPhoto.editState.activePresetId) {
@@ -1345,6 +1346,27 @@ function setCompareMode(mode) {
     }
   }
   if (el.toggleSplit) el.toggleSplit.setAttribute("aria-pressed", String(state.isSplitActive));
+}
+
+function updatePreviewAspectRatio(width, height) {
+  const w = Number(width);
+  const h = Number(height);
+  if (!w || !h || w <= 0 || h <= 0) return;
+  const ratioStr = `${w} / ${h}`;
+  const orientation = w > h ? "landscape" : w < h ? "portrait" : "square";
+  if (el.stageViewport) {
+    el.stageViewport.style.setProperty("--image-aspect-ratio", ratioStr);
+    el.stageViewport.style.setProperty("--ratio-w", String(w));
+    el.stageViewport.style.setProperty("--ratio-h", String(h));
+    el.stageViewport.style.aspectRatio = ratioStr;
+    el.stageViewport.dataset.aspectOrientation = orientation;
+  }
+  if (el.previewStage) {
+    el.previewStage.style.setProperty("--image-aspect-ratio", ratioStr);
+    el.previewStage.style.setProperty("--ratio-w", String(w));
+    el.previewStage.style.setProperty("--ratio-h", String(h));
+    el.previewStage.dataset.aspectOrientation = orientation;
+  }
 }
 
 function updateSplitView() {
@@ -2618,6 +2640,7 @@ function enterEditorMode(file) {
   el.fileDimensions.textContent = dims;
   el.imageMeta.textContent = dims;
   el.imageMeta.hidden = false;
+  updatePreviewAspectRatio(state.sourceImage.naturalWidth, state.sourceImage.naturalHeight);
 
 
   // P0.2: Instant Film Experience after upload
@@ -2697,6 +2720,19 @@ function remove() {
   if (el.studioDock) delete el.studioDock.dataset.studioMode;
   el.imageMeta.hidden = true;
   el.previewStage.classList.remove("has-image");
+  if (el.stageViewport) {
+    el.stageViewport.style.removeProperty("--image-aspect-ratio");
+    el.stageViewport.style.removeProperty("--ratio-w");
+    el.stageViewport.style.removeProperty("--ratio-h");
+    el.stageViewport.style.aspectRatio = "";
+    delete el.stageViewport.dataset.aspectOrientation;
+  }
+  if (el.previewStage) {
+    el.previewStage.style.removeProperty("--image-aspect-ratio");
+    el.previewStage.style.removeProperty("--ratio-w");
+    el.previewStage.style.removeProperty("--ratio-h");
+    delete el.previewStage.dataset.aspectOrientation;
+  }
   if (el.lookDetailCard) el.lookDetailCard.hidden = true;
   if (el.studioLookCard) el.studioLookCard.hidden = true;
   if (el.recentSection) el.recentSection.hidden = true;
@@ -3410,6 +3446,7 @@ if (typeof window !== "undefined") {
     resetAll,
     setCompareMode,
     updateSplitView,
+    updatePreviewAspectRatio,
     handleSplitDrag,
     startStageHold,
     stopStageHold,

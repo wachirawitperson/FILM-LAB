@@ -514,6 +514,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  container-type: size;
   background-image: linear-gradient(45deg, rgba(255,255,255,.03) 25%, transparent 25%),
                     linear-gradient(-45deg, rgba(255,255,255,.03) 25%, transparent 25%),
                     linear-gradient(45deg, transparent 75%, rgba(255,255,255,.03) 75%),
@@ -526,31 +527,37 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 
 .stage-viewport {
   position: relative;
-  display: inline-grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: var(--image-aspect-ratio, auto);
+  width: min(100cqw, calc(100cqh * var(--ratio-w, 1) / var(--ratio-h, 1)));
+  height: min(100cqh, calc(100cqw * var(--ratio-h, 1) / var(--ratio-w, 1)));
   max-width: 100%;
   max-height: 100%;
   min-width: 0;
+  min-height: 0;
   user-select: none;
   -webkit-user-select: none;
   touch-action: pan-y;
 }
 
-.stage-viewport img,
-.stage-viewport canvas {
+.stage-viewport img {
   display: block;
+  width: 100%;
+  height: 100%;
   max-width: 100%;
-  max-height: 62vh;
+  max-height: 100%;
   object-fit: contain;
-  width: auto;
-  height: auto;
+  aspect-ratio: var(--image-aspect-ratio, auto);
 }
 
 .graded-layer {
   position: absolute;
   inset: 0;
-  display: grid;
-  place-items: center;
+  width: 100%;
+  height: 100%;
+  display: block;
   overflow: hidden;
   pointer-events: none;
   transition: opacity .1s ease;
@@ -561,8 +568,13 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 
 .graded-layer canvas {
+  display: block;
   width: 100%;
   height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  aspect-ratio: var(--image-aspect-ratio, auto);
 }
 
 /* Before/After Split Line & Handle */
@@ -2441,24 +2453,40 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 
   .preview-stage {
     min-height: clamp(230px, 46vh, 360px);
-  }
-
-  .editor-shell.is-editor-mode .stage-viewport {
-    max-height: 100%;
-    max-width: 100%;
-  }
-
-  .editor-shell.is-editor-mode .stage-viewport img,
-  .editor-shell.is-editor-mode .stage-viewport canvas {
-    max-height: 100%;
-    max-width: 100%;
-    object-fit: contain;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .editor-shell.is-editor-mode .preview-stage {
     min-height: 0;
     height: clamp(140px, 26vh, 220px);
     padding: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    container-type: size;
+  }
+
+  .editor-shell.is-editor-mode .stage-viewport {
+    aspect-ratio: var(--image-aspect-ratio, auto);
+    width: min(100cqw, calc(100cqh * var(--ratio-w, 1) / var(--ratio-h, 1)));
+    height: min(100cqh, calc(100cqw * var(--ratio-h, 1) / var(--ratio-w, 1)));
+    max-width: 100%;
+    max-height: 100%;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .editor-shell.is-editor-mode .stage-viewport img,
+  .editor-shell.is-editor-mode .stage-viewport canvas {
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+    max-width: 100%;
+    object-fit: contain;
+    aspect-ratio: var(--image-aspect-ratio, auto);
   }
 
   .editor-shell.is-editor-mode .filmstrip-bar {
@@ -2821,18 +2849,31 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     min-height: 0;
     height: clamp(220px, 32vh, 360px);
     padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    container-type: size;
   }
 
   .editor-shell.is-editor-mode .stage-viewport {
-    max-height: 100%;
+    aspect-ratio: var(--image-aspect-ratio, auto);
+    width: min(100cqw, calc(100cqh * var(--ratio-w, 1) / var(--ratio-h, 1)));
+    height: min(100cqh, calc(100cqw * var(--ratio-h, 1) / var(--ratio-w, 1)));
     max-width: 100%;
+    max-height: 100%;
+    min-width: 0;
+    min-height: 0;
   }
 
   .editor-shell.is-editor-mode .stage-viewport img,
   .editor-shell.is-editor-mode .stage-viewport canvas {
+    width: 100%;
+    height: 100%;
     max-height: 100%;
     max-width: 100%;
     object-fit: contain;
+    aspect-ratio: var(--image-aspect-ratio, auto);
   }
 
   .editor-shell.is-editor-mode .filmstrip-bar {
@@ -2947,20 +2988,47 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     display: none;
   }
 
-  /* Left column: Photo Workspace (Photo Preview + Filmstrip + Film Index) */
+  /* Left column: Photo Workspace (Photo Preview + Filmstrip) */
   .editor-shell.is-editor-mode .stage-section {
     grid-column: 1;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 16px;
     min-width: 0;
     position: sticky;
     top: 20px;
   }
 
-  .stage-viewport img,
-  .stage-viewport canvas {
-    max-height: 68vh;
+  .editor-shell.is-editor-mode .preview-stage {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 380px;
+    height: clamp(380px, 64vh, 640px);
+    max-height: calc(100vh - 200px);
+    padding: 16px;
+    overflow: hidden;
+    container-type: size;
+  }
+
+  .editor-shell.is-editor-mode .stage-viewport {
+    aspect-ratio: var(--image-aspect-ratio, auto);
+    width: min(100cqw, calc(100cqh * var(--ratio-w, 1) / var(--ratio-h, 1)));
+    height: min(100cqh, calc(100cqw * var(--ratio-h, 1) / var(--ratio-w, 1)));
+    max-width: 100%;
+    max-height: 100%;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .editor-shell.is-editor-mode .stage-viewport img,
+  .editor-shell.is-editor-mode .stage-viewport canvas {
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+    max-width: 100%;
+    object-fit: contain;
+    aspect-ratio: var(--image-aspect-ratio, auto);
   }
 
   /* Right column: Studio Controls Dock */
